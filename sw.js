@@ -1,5 +1,5 @@
 // 오프라인에서도 열리도록 앱 파일을 저장해 둠 (파일을 고치면 VERSION을 올리기)
-var VERSION = 'goodbye-v1';
+var VERSION = 'goodbye-v2';
 var FILES = ['./', 'index.html', 'app.css', 'app.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-maskable-512.png'];
 

@@ -1,7 +1,7 @@
 {
   "name": "굿바이마켓 김포점",
   "short_name": "굿바이마켓",
-  "description": "재고는 BYE, 득템은 BUY! 굿바이마켓 회원 앱",
+  "description": "놓치면 BYE, 잡으면 BUY! 굿바이마켓 회원 앱",
   "lang": "ko",
   "start_url": "./",
   "scope": "./",

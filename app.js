@@ -125,7 +125,7 @@
     return '<header class="hdr"><div>' +
       '<div class="logo" role="img" aria-label="GOOD-BUY 굿바이마켓"><span class="g">GOOD</span><span class="b">-BUY</span></div>' +
       '<svg class="smile" width="40" height="9" viewBox="0 0 40 9" aria-hidden="true"><path d="M2 2 Q20 12 38 2" fill="none" stroke="#F26A1B" stroke-width="3" stroke-linecap="round"/></svg>' +
-      '<div class="slogan">재고는 BYE, 득템은 <b>BUY!</b> · 김포점</div></div>' +
+      '<div class="slogan">놓치면 BYE, 잡으면 <b>BUY!</b> · 김포점</div></div>' +
       '<div class="pts"><small>내 포인트</small><strong>' + S.points.toLocaleString('ko-KR') + 'P</strong></div></header><div class="band"></div>';
   }
   function nav() {
