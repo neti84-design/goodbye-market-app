@@ -1,10 +1,11 @@
-// 오프라인에서도 열리도록 앱 파일을 저장해 둠 (파일을 고치면 VERSION을 올리기)
-var VERSION = 'goodbye-v2';
-var FILES = ['./', 'index.html', 'app.css', 'app.js', 'manifest.webmanifest',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-maskable-512.png'];
+// 오프라인에서도 열리도록 앱 파일을 저장해 둠 (파일을 고치면 VERSION과 index.html의 ?v= 숫자를 같이 올리기)
+var VERSION = 'goodbye-v5';
+var FILES = ['./', 'index.html', 'app.css?v=5', 'app.js?v=5', 'manifest.webmanifest',
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-maskable-512.png',
+  'img/p1.webp', 'img/p2.webp', 'img/p3.webp', 'img/p4.webp', 'img/p5.webp', 'img/p6.webp', 'img/i1.webp'];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));
+  e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(FILES.map(function (f) { return new Request(f, { cache: 'reload' }); })); }).then(function () { return self.skipWaiting(); }));
 });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
@@ -14,7 +15,8 @@ self.addEventListener('activate', function (e) {
 // 네트워크 먼저, 안 되면 저장본
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
-  e.respondWith(fetch(e.request).then(function (res) {
+  var same = new URL(e.request.url).origin === location.origin;
+  e.respondWith((same ? fetch(e.request.url, { cache: 'no-cache' }) : fetch(e.request)).then(function (res) {
     var copy = res.clone();
     caches.open(VERSION).then(function (c) { c.put(e.request, copy); });
     return res;

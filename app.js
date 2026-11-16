@@ -8,15 +8,33 @@
 
   /* ---------- 예시 데이터 (소비기한은 오늘 기준 남은 일수) ---------- */
   var PRODUCTS = [
-    { id: 'p1', name: '냉동 물만두 1kg', cat: '식품 · 냉동', group: 'food', reg: 9980, price: 3990, stock: 18, days: 64 },
-    { id: 'p2', name: '오트 그래놀라 500g', cat: '식품 · 상온', group: 'food', reg: 7900, price: 2900, stock: 42, days: 41 },
-    { id: 'p3', name: '비빔면 4개입', cat: '식품 · 상온', group: 'food', reg: 4980, price: 1990, stock: 9, days: 89 },
-    { id: 'p4', name: '드립백 커피 30개입', cat: '식품 · 상온', group: 'food', reg: 15900, price: 5900, stock: 56, days: 164 },
-    { id: 'p5', name: '주방세제 리필 1.2L 2개', cat: '생활용품', group: 'life', reg: 8900, price: 3500, stock: 27, days: null },
-    { id: 'p6', name: '블록 놀이 세트 520피스', cat: '완구', group: 'life', reg: 39900, price: 14900, stock: 6, days: null }
+    { id: 'p1', name: '오뚜기 XO 물만두 378g×2', cat: '식품 · 냉동', group: 'food', reg: 8980, price: 3590, stock: 18, days: 64,
+      brand: '오뚜기', size: '756g (378g × 2봉)', keep: '냉동 보관 (-18℃ 이하)',
+      desc: '얇은 피에 고기와 채소 소를 채운 물만두예요. 끓는 물에 삶아도, 라면이나 만둣국에 넣어도 좋아요.',
+      why: '점포마다 몇 봉씩 남은 상품을 한곳에 모았어요. 소비기한이 두 달 남짓 남아 있어요.' },
+    { id: 'p2', name: '포스트 그래놀라 크랜베리아몬드 570g', cat: '식품 · 상온', group: 'food', reg: 9980, price: 3990, stock: 42, days: 41,
+      brand: '포스트', size: '570g', keep: '실온 보관 · 개봉 후 밀봉',
+      desc: '크랜베리와 아몬드가 들어간 그래놀라예요. 우유나 요거트에 곁들여 아침으로 먹기 좋아요.',
+      why: '시즌 기획이 끝나 매대에서 빠진 상품이에요.' },
+    { id: 'p3', name: '팔도 비빔면 130g×5', cat: '식품 · 상온', group: 'food', reg: 4680, price: 1890, stock: 9, days: 89,
+      brand: '팔도', size: '650g (130g × 5개)', keep: '실온 보관',
+      desc: '새콤달콤한 비빔장이 들어 있는 비빔면이에요. 삶아서 찬물에 헹군 뒤 비벼 드세요.',
+      why: '여름 행사 뒤 점포에 남은 물량이에요.' },
+    { id: 'p4', name: '이디야 핸드드립 에티오피아 8g×7', cat: '식품 · 상온', group: 'food', reg: 6490, price: 2590, stock: 56, days: 164,
+      brand: '이디야', size: '56g (8g × 7개)', keep: '실온 보관 · 직사광선 피하기',
+      desc: '컵에 걸어 뜨거운 물만 부으면 되는 드립백 커피예요. 사무실이나 캠핑에 챙기기 좋아요.',
+      why: '포장이 바뀌어 예전 포장 상품을 모았어요.' },
+    { id: 'p5', name: '퐁퐁 베이킹소다 리필 2L', cat: '생활용품', group: 'life', reg: 8900, price: 3500, stock: 27, days: null,
+      brand: '퐁퐁', size: '2L 리필', keep: '실온 보관 · 어린이 손이 닿지 않는 곳',
+      desc: '쓰던 용기에 옮겨 담아 쓰는 주방세제 리필이에요. 대용량이라 오래 써요.',
+      why: '점포마다 한두 개씩 남은 재고를 모았어요. 생활용품이라 기한이 없어요.' },
+    { id: 'p6', name: '옥스포드 블록생활 공룡친구들', cat: '완구', group: 'life', reg: 39900, price: 14900, stock: 6, days: null,
+      brand: '옥스포드', size: '블록 세트 1개 (38개월 이상)', keep: '작은 부품이 있어 36개월 미만 어린이는 사용 금지',
+      desc: '공룡 친구들을 조립하며 노는 블록 세트예요. 선물용으로도 좋아요.',
+      why: '시즌이 지나 점포 진열에서 빠진 완구예요. 상자 그대로 새 상품이에요.' }
   ];
   var INCOMING = [
-    { id: 'i1', name: '냉동 떡갈비 1kg', from: 4990, days: 103, when: 1, canWish: true, fans: 214 },
+    { id: 'i1', name: 'CJ 비비고 한입떡갈비 320g', from: 2990, days: 103, when: 1, canWish: true, fans: 214, img: true },
     { id: 'i2', name: '컵라면 12개입', from: 5900, days: 118, when: 1, canWish: true, fans: 158 },
     { id: 'i3', name: '어린이 자전거 헬멧', from: 9900, days: null, when: 1, canWish: false, fans: 0 },
     { id: 'i4', name: '시리얼 바 24개입', from: 6500, days: 54, when: 3, canWish: false, fans: 0 },
@@ -78,7 +96,7 @@
     var exp = p.days != null ? addDays(T, p.days) : null;
     var dl = exp ? addDays(exp, -30) : addDays(T, 7);
     return {
-      raw: p, id: p.id, name: p.name, cat: p.cat, group: p.group, price: p.price, reg: p.reg,
+      raw: p, id: p.id, name: p.name, img: 'img/' + p.id + '.webp', cat: p.cat, group: p.group, price: p.price, reg: p.reg,
       stock: stock, low: stock < 30, night: night,
       wished: !!S.wish[p.id],
       pct: Math.round((1 - p.price / p.reg) * 100),
@@ -188,7 +206,7 @@
     return '<article class="card">' +
       '<div class="row"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="tag cat">' + p.cat + '</span>' + badge + '</div>' +
       '<button class="icon-btn heart" data-a="wish" data-id="' + p.id + '" aria-label="' + p.name + (p.wished ? ' 찜 해제' : ' 찜하기') + '" aria-pressed="' + p.wished + '">' + I.heart(p.wished) + '</button></div>' +
-      '<button class="p-main" data-a="open" data-id="' + p.id + '"><div style="flex:1;display:flex;flex-direction:column;gap:4px">' +
+      '<button class="p-main" data-a="open" data-id="' + p.id + '"><img class="thumb" src="' + p.img + '" alt="" loading="lazy"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">' +
       '<div class="p-name">' + p.name + '</div>' +
       '<div class="price"><s>' + won(p.reg) + '</s><span class="pct">' + p.pct + '%</span><span class="now">' + won(p.price) + '</span></div></div>' +
       '<div class="exp"><small>' + p.expLabel + '</small><strong>' + p.expBig + '</strong><em>' + p.dday + '</em></div></button>' +
@@ -207,9 +225,10 @@
       var tags = it.when === 1 ? '<span class="tag move">이동 중</span>' + (it.fans ? '<span class="tag low">인기 · 찜 ' + (it.fans + (on ? 1 : 0)) + '명</span>' : '')
         : '<span class="tag cat">점포에서 모으는 중</span>';
       return '<article class="card" style="gap:8px"><div class="row"><div style="display:flex;gap:6px">' + tags + '</div>' + right + '</div>' +
-        '<div class="p-name">' + it.name + '</div>' +
+        '<div style="display:flex;gap:12px;align-items:center">' + (it.img ? '<img class="thumb sm" src="img/' + it.id + '.webp" alt="">' : '<div class="thumb sm ph">' + I.truck('#B8B0A6') + '</div>') +
+        '<div class="inc-body" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><div class="p-name">' + it.name + '</div>' +
         '<div class="row" style="align-items:baseline"><div style="font-size:13px;color:#5E5852">' + (it.days != null ? '소비기한 <b style="color:#2B2B2B;font-size:15px">' + exp + '</b>' : '<b style="color:#2B2B2B;font-size:15px">기한 없는 상품</b>') + '</div>' +
-        '<div class="from">' + won(it.from) + '<span>부터 시작</span></div></div></article>';
+        '<div class="from">' + won(it.from) + '<span>부터 시작</span></div></div></div></div></article>';
     };
     var h = '<section class="truck"><div class="row"><div style="display:flex;gap:8px;align-items:center;font-size:16px;font-weight:900">' + I.truck('#FFB27A') + '지금 이동 중</div>' +
       '<div style="font-size:12px;color:#D6D2CC">' + mdw(addDays(T, 1)) + ' 오전 진열</div></div>' +
@@ -239,6 +258,7 @@
       var on = !S.unsel[p.id];
       return '<article class="card" style="flex-direction:row;align-items:center;gap:12px;padding:12px 14px">' +
         '<button class="icon-btn" style="margin:-6px;flex-shrink:0" data-a="sel" data-id="' + p.id + '" aria-pressed="' + on + '" aria-label="' + p.name + ' 선택"><span class="check' + (on ? ' on' : '') + '">' + I.check() + '</span></button>' +
+        '<button data-a="open" data-id="' + p.id + '" style="flex-shrink:0" aria-label="' + p.name + ' 상세 보기"><img class="thumb sm" src="' + p.img + '" alt=""></button>' +
         '<div style="flex:1;display:flex;flex-direction:column;gap:3px"><div style="font-size:15px;font-weight:700">' + p.name + '</div>' +
         '<div class="muted">소비기한 <b style="color:#2B2B2B">' + p.expFull + '</b> · ' + p.stockTxt + '</div>' +
         '<div style="font-size:12px;font-weight:700;color:#A33D06">' + p.pickupShort + '</div></div>' +
@@ -331,22 +351,33 @@
       '<button class="btn full ink" data-a="home">진열 상품 더 보기</button></div></div>';
   }
 
-  function sheet() {
+  function detailView() {
     var p = byId(V.detail); if (!p) return '';
+    var r = p.raw;
     var pct = Math.max(6, Math.min(100, Math.round(p.stock / 60 * 100)));
-    return '<div class="sheet-bg"><button class="close-area" data-a="close" aria-label="상세 닫기"></button><div class="sheet" role="dialog" aria-label="' + p.name + ' 상세">' +
-      '<div class="row" style="align-items:flex-start"><div><div class="muted">' + p.cat + ' · ' + p.stockTxt + '</div><div style="font-size:20px;font-weight:900">' + p.name + '</div></div>' +
-      '<button class="icon-btn" style="margin:-8px -8px 0 0" data-a="close" aria-label="닫기">' + I.x + '</button></div>' +
-      '<div class="expbar"><div><small>' + p.expLabel + '</small><strong>' + p.expBig + '</strong></div><em>' + p.dday + '</em></div>' +
-      '<div class="ladder"><div class="today"><small>오늘</small><strong>' + won(p.price) + '</strong></div><div><small>내일 예정</small><strong>' + won(p.tmr) + '</strong></div><div><small>모레 예정</small><strong>' + won(p.day2) + '</strong></div></div>' +
-      '<div style="display:flex;flex-direction:column;gap:6px"><div class="row" style="font-size:13px"><b>남은 수량 ' + (p.night ? p.stock + '개' : '??개') + '</b><span style="color:#A33D06;font-weight:700">' + (!p.night ? '밤 10시 공개' : p.low ? '거의 다 나갔어요' : '오늘 들어온 수량의 절반 남짓') + '</span></div>' +
+    var h = '<div class="topbar"><button class="icon-btn" data-a="close" aria-label="목록으로 돌아가기">' + I.back + '</button><div style="font-size:17px;font-weight:900;flex:1">상품 상세</div>' +
+      '<button class="icon-btn heart" data-a="wish" data-id="' + p.id + '" aria-label="' + (p.wished ? '찜 해제' : '찜하기') + '" aria-pressed="' + p.wished + '">' + I.heart(p.wished) + '</button></div>';
+    h += '<main class="scroll"><div class="hero"><img src="' + p.img + '" alt="' + p.name + '"></div><div class="pad" style="padding-top:16px">';
+    h += '<section style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tag cat">' + p.cat + '</span>' +
+      (!p.night ? '<span class="tag hidden">남은 수량 ??개</span>' : p.low ? '<span class="tag low">임박 · ' + p.stock + '개 남음</span>' : '') + '</div>' +
+      '<div class="muted" style="font-weight:700">' + r.brand + '</div><div style="font-size:21px;font-weight:900;line-height:1.3">' + p.name + '</div>' +
+      '<div class="price big"><s>' + won(p.reg) + '</s><span class="pct">' + p.pct + '%</span><span class="now">' + won(p.price) + '</span></div></section>';
+    h += '<div class="expbar"><div><small>' + p.expLabel + '</small><strong>' + p.expBig + '</strong></div><em>' + p.dday + '</em></div>';
+    h += '<div class="ladder"><div class="today"><small>오늘</small><strong>' + won(p.price) + '</strong></div><div><small>내일 예정</small><strong>' + won(p.tmr) + '</strong></div><div><small>모레 예정</small><strong>' + won(p.day2) + '</strong></div></div>';
+    h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="row" style="font-size:13px"><b>남은 수량 ' + (p.night ? p.stock + '개' : '??개') + '</b><span style="color:#A33D06;font-weight:700">' + (!p.night ? '밤 10시 공개' : p.low ? '거의 다 나갔어요' : '오늘 들어온 수량의 절반 남짓') + '</span></div>' +
       (p.night ? '<div class="bar"><i style="width:' + pct + '%"></i></div>' : '') +
-      '<div style="font-size:13px;font-weight:700;color:#A33D06">' + p.urgency + '</div></div>' +
-      '<div class="muted" style="background:#F5F2EE;border-radius:10px;padding:10px 12px;line-height:1.6">' + p.pickupRule + ' · 마감이 지나면 환불이 안 돼요</div>' +
-      '<div style="display:flex;gap:8px"><button class="btn line" style="flex:1;min-height:52px" data-a="wish" data-id="' + p.id + '">' + (p.wished ? '찜 해제' : '찜하기') + '</button>' +
+      '<div style="font-size:13px;font-weight:700;color:#A33D06">' + p.urgency + '</div></div>';
+    h += '<section class="card" style="gap:8px"><div class="h2">상품 소개</div><p style="margin:0;font-size:14px;line-height:1.7">' + r.desc + '</p></section>';
+    h += '<section class="card" style="gap:8px"><div class="h2">상품 정보</div>' +
+      '<div class="kv"><span>브랜드</span><b>' + r.brand + '</b></div><div class="kv"><span>용량·구성</span><b>' + r.size + '</b></div>' +
+      '<div class="kv"><span>보관 방법</span><b style="text-align:right;max-width:62%">' + r.keep + '</b></div>' +
+      '<div class="kv"><span>소비기한</span><b>' + p.expFull + '</b></div><div class="kv"><span>정상가</span><b>' + won(p.reg) + '</b></div></section>';
+    h += '<section class="card" style="gap:8px;background:#FFF0E5;box-shadow:none"><div class="h2" style="color:#A33D06">왜 이 가격인가요?</div><p style="margin:0;font-size:14px;line-height:1.7">' + r.why + ' 품질에는 문제가 없는 새 상품이에요.</p></section>';
+    h += '<section class="card" style="gap:6px"><div class="h2">픽업 안내</div><p style="margin:0;font-size:13px;line-height:1.7;color:#5E5852">' + p.pickupRule + '하셔야 해요. <b style="color:#A33D06">마감이 지나면 환불이 안 돼요.</b><br>김포점 픽업대 · 10:00~22:00 · 멤버십 바코드로 찾아가요.</p></section>';
+    h += '</div></main><div class="bottom" style="display:flex;gap:8px"><button class="btn line" style="flex:1;min-height:52px" data-a="wish" data-id="' + p.id + '">' + (p.wished ? '찜 해제' : '찜하기') + '</button>' +
       (p.night && p.stock > 0 ? '<button class="btn" style="flex:1.4;min-height:52px" data-a="buyNow" data-id="' + p.id + '">바로 픽업 결제</button>'
-        : '<div class="btn off" style="flex:1.4;min-height:52px">' + (p.night ? '오늘은 다 팔렸어요' : '결제는 밤 10시 재고 공개 후') + '</div>') +
-      '</div></div></div>';
+        : '<div class="btn off" style="flex:1.4;min-height:52px">' + (p.night ? '오늘은 다 팔렸어요' : '결제는 밤 10시 재고 공개 후') + '</div>') + '</div>';
+    return h;
   }
 
   /* ---------- 그리기 ---------- */
@@ -354,19 +385,19 @@
   var scrollMemo = {};
   function render() {
     var sc = app.querySelector('.scroll');
-    var key = V.screen + ':' + V.tab;
+    var key = V.detail ? 'detail' : V.screen + ':' + V.tab;
     if (sc && render.lastKey) scrollMemo[render.lastKey] = sc.scrollTop;
     var h;
-    if (V.screen === 'checkout') h = checkoutView();
+    if (V.detail) h = detailView();
+    else if (V.screen === 'checkout') h = checkoutView();
     else if (V.screen === 'done') h = doneView();
     else {
       var body = V.tab === 'incoming' ? incomingView() : V.tab === 'wish' ? wishView() : V.tab === 'treasure' ? treasureView() : V.tab === 'member' ? memberView() : homeView();
       h = header() + '<main class="scroll"><div class="pad">' + body + '</div></main>' + nav();
     }
-    if (V.detail) h += sheet();
     app.innerHTML = h;
     var nsc = app.querySelector('.scroll');
-    if (nsc && scrollMemo[key] != null && render.lastKey === key) nsc.scrollTop = scrollMemo[key];
+    if (nsc && scrollMemo[key] != null && (render.lastKey === key || render.lastKey === 'detail')) nsc.scrollTop = scrollMemo[key];
     render.lastKey = key;
   }
   var toastT;
@@ -380,7 +411,7 @@
   var A = {
     tab: function (id) { V.tab = id; scrollMemo[V.screen + ':' + id] = 0; },
     filter: function (id) { V.filter = id; },
-    open: function (id) { V.detail = id; },
+    open: function (id) { V.detail = id; scrollMemo.detail = 0; },
     close: function () { V.detail = null; },
     wish: function (id) {
       if (S.wish[id]) { delete S.wish[id]; toast('찜을 뺐어요'); } else { S.wish[id] = true; toast('찜했어요 · 찜 탭에서 픽업 결제할 수 있어요'); }
