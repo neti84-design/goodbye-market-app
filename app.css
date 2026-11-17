@@ -240,3 +240,19 @@ button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
 .qcount { font-size: 13px; color: #5E5852; } .qcount b { color: #A33D06; }
 .qmine { display: flex; align-items: baseline; gap: 8px; } .qmine small { font-size: 13px; font-weight: 700; color: #5E5852; } .qmine strong { font-size: 32px; font-weight: 900; color: #C84B08; }
 button.logo { padding: 0; text-align: left; }
+
+/* 첫 화면을 한 화면에 (줄서기까지) */
+.landing { background: linear-gradient(180deg, #F26A1B 0, #F26A1B 210px, #F5F2EE 210px); }
+.l-head { padding: calc(14px + var(--safe-t)) 20px 12px; }
+.l-top { display: flex; justify-content: space-between; align-items: center; }
+.l-week { margin-top: 0; text-align: right; font-size: 12px; line-height: 1.4; }
+.l-title { margin-top: 12px; font-size: 36px; letter-spacing: -1.2px; white-space: nowrap; }
+.l-sub { margin-top: 2px; font-size: 13px; }
+.slider { padding-top: 2px; }
+.s-img { aspect-ratio: 1 / 0.98; }
+.s-body { padding: 10px 14px 14px; gap: 5px; }
+.s-name { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.s-exp { padding: 7px 12px; }
+.s-exp strong { font-size: 17px; }
+.s-exp em { font-size: 16px; }
+.dots { padding: 10px 0 2px; }

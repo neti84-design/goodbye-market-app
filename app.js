@@ -8,11 +8,19 @@
 
   /* ---------- 예시 데이터 (소비기한은 오늘 기준 남은 일수) ---------- */
   var PRODUCTS = [
-    { id: 'p1', name: '오뚜기 XO 물만두 378g×2', cat: '식품 · 냉동', group: 'food', reg: 8980, price: 3590, stock: 18, days: 64, week: 1, queue: 11,
+    { id: 'g1', name: '뉴 슈퍼마리오브라더스 U 디럭스', cat: '게임', group: 'life', reg: 64800, price: 34900, stock: 12, days: null, week: 1, queue: 41,
+      brand: '닌텐도 스위치', size: '닌텐도 스위치용 게임 칩 1개 (한국어판)', keep: '실온 보관 · 전체 이용가',
+      desc: '마리오와 친구들이 함께 달리는 횡스크롤 게임이에요. 최대 4명이 함께 할 수 있어 가족 게임으로 좋아요.',
+      why: '새 시리즈가 나오면서 점포 진열에서 빠진 예전 타이틀이에요. 포장을 뜯지 않은 새 상품이에요.' },
+    { id: 'g2', name: '포켓몬스터 태그스타 박스', cat: '완구', group: 'life', reg: 17900, price: 7900, stock: 24, days: null, week: 2, queue: 87,
+      brand: '포켓몬스터', size: '박스 1개 (6세 이상)', keep: '실온 보관 · 6세 이상',
+      desc: '몬스터볼 무늬가 들어간 빨간 수납 박스예요. 포켓몬을 좋아하는 아이 선물로 인기가 많아요.',
+      why: '행사 매대에서 빠진 뒤 점포마다 몇 개씩 남은 상품을 모았어요.' },
+    { id: 'p1', name: '오뚜기 XO 물만두 378g×2', cat: '식품 · 냉동', group: 'food', reg: 8980, price: 3590, stock: 18, days: 64, week: 4, queue: 11,
       brand: '오뚜기', size: '756g (378g × 2봉)', keep: '냉동 보관 (-18℃ 이하)',
       desc: '얇은 피에 고기와 채소 소를 채운 물만두예요. 끓는 물에 삶아도, 라면이나 만둣국에 넣어도 좋아요.',
       why: '점포마다 몇 봉씩 남은 상품을 한곳에 모았어요. 소비기한이 두 달 남짓 남아 있어요.' },
-    { id: 'p2', name: '포스트 그래놀라 크랜베리아몬드 570g', cat: '식품 · 상온', group: 'food', reg: 9980, price: 3990, stock: 42, days: 41, week: 4, queue: 15,
+    { id: 'p2', name: '포스트 그래놀라 크랜베리아몬드 570g', cat: '식품 · 상온', group: 'food', reg: 9980, price: 3990, stock: 42, days: 41,
       brand: '포스트', size: '570g', keep: '실온 보관 · 개봉 후 밀봉',
       desc: '크랜베리와 아몬드가 들어간 그래놀라예요. 우유나 요거트에 곁들여 아침으로 먹기 좋아요.',
       why: '시즌 기획이 끝나 매대에서 빠진 상품이에요.' },
@@ -20,7 +28,7 @@
       brand: '팔도', size: '650g (130g × 5개)', keep: '실온 보관',
       desc: '새콤달콤한 비빔장이 들어 있는 비빔면이에요. 삶아서 찬물에 헹군 뒤 비벼 드세요.',
       why: '여름 행사 뒤 점포에 남은 물량이에요.' },
-    { id: 'p4', name: '이디야 핸드드립 에티오피아 8g×7', cat: '식품 · 상온', group: 'food', reg: 6490, price: 2590, stock: 56, days: 164, week: 3, queue: 23,
+    { id: 'p4', name: '이디야 핸드드립 에티오피아 8g×7', cat: '식품 · 상온', group: 'food', reg: 6490, price: 2590, stock: 56, days: 164,
       brand: '이디야', size: '56g (8g × 7개)', keep: '실온 보관 · 직사광선 피하기',
       desc: '컵에 걸어 뜨거운 물만 부으면 되는 드립백 커피예요. 사무실이나 캠핑에 챙기기 좋아요.',
       why: '포장이 바뀌어 예전 포장 상품을 모았어요.' },
@@ -28,7 +36,7 @@
       brand: '퐁퐁', size: '2L 리필', keep: '실온 보관 · 어린이 손이 닿지 않는 곳',
       desc: '쓰던 용기에 옮겨 담아 쓰는 주방세제 리필이에요. 대용량이라 오래 써요.',
       why: '점포마다 한두 개씩 남은 재고를 모았어요. 생활용품이라 기한이 없어요.' },
-    { id: 'p6', name: '옥스포드 블록생활 공룡친구들', cat: '완구', group: 'life', reg: 39900, price: 14900, stock: 6, days: null, week: 2, queue: 9,
+    { id: 'p6', name: '옥스포드 블록생활 공룡친구들', cat: '완구', group: 'life', reg: 39900, price: 14900, stock: 6, days: null, week: 3, queue: 9,
       brand: '옥스포드', size: '블록 세트 1개 (38개월 이상)', keep: '작은 부품이 있어 36개월 미만 어린이는 사용 금지',
       desc: '공룡 친구들을 조립하며 노는 블록 세트예요. 선물용으로도 좋아요.',
       why: '시즌이 지나 점포 진열에서 빠진 완구예요. 상자 그대로 새 상품이에요.' }
@@ -104,7 +112,7 @@
       tmr: r10(p.price * 0.9), day2: r10(p.price * 0.8),
       exp: exp, dl: dl,
       expLabel: exp ? '소비기한' : '기한 없는 상품',
-      expBig: exp ? md(exp) : '생활·완구',
+      expBig: exp ? md(exp) : (p.cat === '게임' ? '게임' : '생활·완구'),
       expFull: exp ? exp.getFullYear() + '. ' + (exp.getMonth() + 1) + '. ' + exp.getDate() + '.까지' : '기한 없음',
       dday: exp ? 'D-' + p.days : '7일 내 픽업',
       pickupShort: mdw(dl) + '까지 픽업 · 이후 환불 불가',
@@ -379,10 +387,10 @@
   }
   function landingView() {
     var items = all().filter(function (p) { return p.raw.week; }).sort(function (a, b) { return a.raw.week - b.raw.week; });
-    var h = '<main class="scroll landing"><div class="l-head">' +
+    var h = '<main class="scroll landing"><div class="l-head"><div class="l-top">' +
       '<div class="l-sign"><div><span class="g">GOOD</span><span class="b">-BUY</span></div><svg width="34" height="8" viewBox="0 0 40 9" aria-hidden="true"><path d="M2 2 Q20 12 38 2" fill="none" stroke="#F26A1B" stroke-width="3.5" stroke-linecap="round"/></svg></div>' +
-      '<div class="l-week">' + weekRange() + ' · 김포점</div>' +
-      '<h1 class="l-title">금주의<br><em>굿바이템!</em></h1>' +
+      '<div class="l-week">' + weekRange() + '<br>김포점</div></div>' +
+      '<h1 class="l-title">금주의 <em>굿바이템!</em></h1>' +
       '<div class="l-sub">이번 주에만 이 가격 · 다 팔리면 끝</div></div>';
     h += '<div class="slider" role="list" aria-label="금주의 굿바이템">' + items.map(function (p, i) {
       var q = queueOf(p);
@@ -391,8 +399,8 @@
         '<span class="s-pct">' + p.pct + '%</span></button>' +
         '<div class="s-body"><div class="muted" style="font-weight:700">' + p.raw.brand + '</div>' +
         '<button class="s-name" data-a="open" data-id="' + p.id + '">' + p.name + '</button>' +
-        '<div class="price"><s>' + won(p.reg) + '</s><span class="now" style="font-size:26px">' + won(p.price) + '</span></div>' +
-        '<div class="s-exp"><div><small>' + p.expLabel + '</small><strong>' + (p.exp ? p.expFull.replace('.까지', '') : '생활·완구') + '</strong></div><em>' + p.dday + '</em></div>' +
+        '<div class="price"><s>' + won(p.reg) + '</s><span class="now" style="font-size:24px">' + won(p.price) + '</span></div>' +
+        '<div class="s-exp"><div><small>' + p.expLabel + '</small><strong>' + (p.exp ? p.expFull.replace('.까지', '') : p.expBig) + '</strong></div><em>' + p.dday + '</em></div>' +
         '<div class="row s-q"><span>' + (q.mine ? '<b style="color:#A33D06">내 순번 ' + q.mine + '번</b> · ' : '') + '줄 선 사람 <b>' + q.count + '명</b>' + (p.night ? ' · 남은 ' + p.stock + '개' : ' · 수량 ??개') + '</span>' +
         (q.mine ? '<button class="pill" data-a="open" data-id="' + p.id + '">내 줄 보기</button>' : '<button class="pill o" data-a="queue" data-id="' + p.id + '">줄 서기</button>') + '</div>' +
         '</div></article>';
