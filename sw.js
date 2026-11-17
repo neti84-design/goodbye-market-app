@@ -1,8 +1,8 @@
 // 오프라인에서도 열리도록 앱 파일을 저장해 둠 (파일을 고치면 VERSION과 index.html의 ?v= 숫자를 같이 올리기)
-var VERSION = 'goodbye-v12';
-var FILES = ['./', 'index.html', 'app.css?v=12', 'app.js?v=12', 'manifest.webmanifest',
+var VERSION = 'goodbye-v13';
+var FILES = ['./', 'index.html', 'app.css?v=13', 'app.js?v=13', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-maskable-512.png',
-  'img/p1.webp', 'img/p2.webp', 'img/p3.webp', 'img/p4.webp', 'img/p5.webp', 'img/p6.webp', 'img/i1.webp',
+  'img/p1.webp', 'img/p2.webp', 'img/p3.webp', 'img/p4.webp', 'img/p5.webp', 'img/p6.webp', 'img/i1.webp', 'img/i2.webp', 'img/i3.webp', 'img/i4.webp', 'img/i5.webp',
   'img/g1.webp', 'img/g2.webp', 'img/g1-l.webp', 'img/g2-l.webp', 'img/g3.webp', 'img/g3-l.webp', 'img/g4.webp', 'img/g4-l.webp', 'img/p1-l.webp', 'img/p2-l.webp', 'img/p3-l.webp', 'img/p4-l.webp', 'img/p5-l.webp', 'img/p6-l.webp'];
 
 self.addEventListener('install', function (e) {

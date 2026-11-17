@@ -270,3 +270,4 @@ button.logo { padding: 0; text-align: left; }
 .step.store b { color: #5E5852; }
 .step em { display: block; font-style: normal; font-size: 11px; font-weight: 700; color: #2B2B2B; }
 .steps-note { margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: #A33D06; font-weight: 700; }
+.inc-body .from s { font-size: 12px; font-weight: 400; color: #9A928A; margin-right: 2px; }

@@ -50,11 +50,11 @@
       why: '시즌이 지나 점포 진열에서 빠진 완구예요. 상자 그대로 새 상품이에요.' }
   ];
   var INCOMING = [
-    { id: 'i1', name: 'CJ 비비고 한입떡갈비 320g', from: 2990, days: 103, when: 1, canWish: true, fans: 214, img: true },
-    { id: 'i2', name: '컵라면 12개입', from: 5900, days: 118, when: 1, canWish: true, fans: 158 },
-    { id: 'i3', name: '어린이 자전거 헬멧', from: 9900, days: null, when: 1, canWish: false, fans: 0 },
-    { id: 'i4', name: '시리얼 바 24개입', from: 6500, days: 54, when: 3, canWish: false, fans: 0 },
-    { id: 'i5', name: '섬유유연제 대용량 3.1L', from: 7900, days: null, when: 3, canWish: true, fans: 0 }
+    { id: 'i1', brand: 'CJ 비비고', name: '한입떡갈비 320g', cat: '식품 · 냉동', reg: 6980, from: 2990, days: 103, when: 1, canWish: true, fans: 214 },
+    { id: 'i2', brand: '농심', name: '육개장 사발면 86g×6', cat: '식품 · 상온', reg: 6120, from: 2490, days: 118, when: 1, canWish: true, fans: 158 },
+    { id: 'i3', brand: '레고', name: '스쿠데리아 페라리 HP 헬멧 (43022)', cat: '완구 · 14세 이상', reg: 139900, from: 69900, days: null, when: 1, canWish: false, fans: 0 },
+    { id: 'i4', brand: '켈로그', name: '에너지바 크런치넛 160g', cat: '식품 · 상온', reg: 6190, from: 2490, days: 54, when: 3, canWish: false, fans: 0 },
+    { id: 'i5', brand: '피죤', name: '섬유유연제 핑크로즈 2.9L', cat: '생활용품', reg: 10820, from: 4900, days: null, when: 3, canWish: true, fans: 0 }
   ];
   var ZONES = ['냉동', '과자', '라면', '음료', '세제', '주방', '완구', '문구', '계산대 앞'];
   var PHOTOS = [['냉동 코너', '매대 3칸'], ['상온 식품', '박스 진열'], ['생활·완구', '뒤쪽 매대']];
@@ -252,10 +252,10 @@
       var tags = it.when === 1 ? '<span class="tag move">이동 중</span>' + (it.fans ? '<span class="tag low">인기 · 찜 ' + (it.fans + (on ? 1 : 0)) + '명</span>' : '')
         : '<span class="tag cat">점포에서 모으는 중</span>';
       return '<article class="card" style="gap:8px"><div class="row"><div style="display:flex;gap:6px">' + tags + '</div>' + right + '</div>' +
-        '<div style="display:flex;gap:12px;align-items:center">' + (it.img ? '<img class="thumb sm" src="img/' + it.id + '.webp" alt="">' : '<div class="thumb sm ph">' + I.truck('#B8B0A6') + '</div>') +
-        '<div class="inc-body" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><div class="p-name">' + it.name + '</div>' +
+        '<div style="display:flex;gap:12px;align-items:center">' + '<img class="thumb" src="img/' + it.id + '.webp" alt="">' +
+        '<div class="inc-body" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><div class="muted" style="font-weight:700">' + it.brand + ' · ' + it.cat + '</div><div class="p-name">' + it.name + '</div>' +
         '<div class="row" style="align-items:baseline"><div style="font-size:13px;color:#5E5852">' + (it.days != null ? '소비기한 <b style="color:#2B2B2B;font-size:15px">' + exp + '</b>' : '<b style="color:#2B2B2B;font-size:15px">기한 없는 상품</b>') + '</div>' +
-        '<div class="from">' + won(it.from) + '<span>부터 시작</span></div></div></div></div></article>';
+        '<div class="from"><s>' + won(it.reg) + '</s> ' + won(it.from) + '<span>부터 시작</span></div></div></div></div></article>';
     };
     var h = '<section class="truck"><div class="row"><div style="display:flex;gap:8px;align-items:center;font-size:16px;font-weight:900">' + I.truck('#FFB27A') + '지금 이동 중</div>' +
       '<div style="font-size:12px;color:#D6D2CC">' + mdw(addDays(T, 1)) + ' 오전 진열</div></div>' +
@@ -299,8 +299,8 @@
     }
     if (inc.length) {
       h += '<div class="h2" style="margin-top:8px">입고 알림 찜</div>' + inc.map(function (it) {
-        return '<article class="card" style="flex-direction:row;align-items:center;gap:10px;padding:12px 14px;border:1px dashed #9A928A;box-shadow:none">' + I.truck() +
-          '<div style="flex:1"><div style="font-size:15px;font-weight:700">' + it.name + '</div><div class="muted">' + mdw(addDays(today0(), it.when)) + ' 입고 예정 · 진열되면 알림을 드려요</div></div>' +
+        return '<article class="card" style="flex-direction:row;align-items:center;gap:10px;padding:12px 14px;border:1px dashed #9A928A;box-shadow:none"><img class="thumb sm" src="img/' + it.id + '.webp" alt="">' +
+          '<div style="flex:1"><div style="font-size:15px;font-weight:700">' + it.brand + ' ' + it.name + '</div><div class="muted">' + mdw(addDays(today0(), it.when)) + ' 입고 예정 · 진열되면 알림을 드려요</div></div>' +
           '<div style="font-size:14px;font-weight:900;color:#C84B08">' + won(it.from) + '~</div></article>';
       }).join('');
     }
