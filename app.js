@@ -107,6 +107,16 @@
     return S.treasure;
   }
 
+  var STEPS = 5, STEP_PCT = 5, DISPOSE_BEFORE = 3;
+  function priceSteps(p, T) {
+    if (p.days == null) return null;
+    var end = p.days - DISPOSE_BEFORE, len = end / STEPS, out = [];
+    for (var k = 0; k < STEPS; k++) {
+      var a = Math.round(k * len), b = k === STEPS - 1 ? end : Math.round((k + 1) * len) - 1;
+      out.push({ n: k + 1, from: addDays(T, a), to: addDays(T, b), price: r10(p.price * (1 - STEP_PCT * k / 100)) });
+    }
+    return out;
+  }
   function prod(p) {
     var T = today0(), night = isNight();
     var stock = Math.max(0, p.stock - (S.sold[p.id] || 0));
@@ -117,7 +127,7 @@
       stock: stock, low: stock < 30, night: night,
       wished: !!S.wish[p.id],
       pct: Math.round((1 - p.price / p.reg) * 100),
-      tmr: r10(p.price * 0.9), day2: r10(p.price * 0.8),
+      steps: priceSteps(p, T), next: p.days != null ? priceSteps(p, T)[1] : null,
       exp: exp, dl: dl,
       expLabel: exp ? '소비기한' : '기한 없는 상품',
       expBig: exp ? md(exp) : (p.cat === '게임' || p.cat === '패션잡화' ? p.cat : '생활·완구'),
@@ -127,7 +137,7 @@
       pickupRule: exp ? '소비기한 한 달 전인 ' + mdw(dl) + '까지 픽업' : '결제 후 7일, ' + mdw(dl) + '까지 픽업',
       stockTxt: night ? '남은 수량 ' + stock + '개' : '남은 수량 ??개',
       urgency: !night ? '지금 몇 개 남았을까요? 밤 10시에 공개돼요 — 그 전에 매장 손님이 담아 갈 수도 있어요'
-        : (stock === 0 ? '오늘은 다 팔렸어요' : stock < 30 ? '딱 ' + stock + '개 남았어요 — 내일까지 남아 있을지 몰라요' : '내일 더 싸지지만, 그때도 남아 있을지는 아무도 몰라요')
+        : (stock === 0 ? '오늘은 다 팔렸어요' : stock < 30 ? '딱 ' + stock + '개 남았어요 — 다음 인하 때까지 남아 있을지 몰라요' : (p.days != null ? '기다리면 5% 내려가지만, 그때도 남아 있을지는 아무도 몰라요' : '가격은 그대로예요 — 다 팔리면 끝나요'))
     };
   }
   function all() { return PRODUCTS.map(prod); }
@@ -188,7 +198,7 @@
       h += '<section class="banner night"><div class="row"><span class="badge">영업 종료 · 밤 10:00 이후</span>' +
         '<span style="font-size:12px;font-weight:700;color:#2A1405">' + (early ? '오늘' : '내일') + ' 오전 10시 개점</span></div>' +
         '<div class="big">오늘 남은 재고 공개!</div>' +
-        '<div class="txt">마감 후 실제로 남은 수량이에요. 지금 찜하고 결제하면 ' + (early ? '오늘' : '내일') + '부터 픽업할 수 있어요. 기한이 하루 줄면 값이 더 내려가요.</div>' +
+        '<div class="txt">마감 후 실제로 남은 수량이에요. 지금 찜하고 결제하면 ' + (early ? '오늘' : '내일') + '부터 픽업할 수 있어요. 소비기한이 가까워지면 5%씩 단계별로 내려가요.</div>' +
         '<button class="demo" data-a="demo">' + (S.demo ? '시연: 낮으로 돌아가기' : '시연: 낮 화면 보기') + '</button></section>';
     }
     h += '<section style="display:flex;flex-direction:column;gap:8px"><div class="row" style="align-items:baseline"><div class="h2">오늘 밤 매장 진열 사진</div><div class="muted">' + (night ? '22:05 촬영' : '밤 10시 공개') + '</div></div><div class="photos">' +
@@ -227,7 +237,7 @@
       '<div class="p-name">' + p.name + '</div>' +
       '<div class="price"><s>' + won(p.reg) + '</s><span class="pct">' + p.pct + '%</span><span class="now">' + won(p.price) + '</span></div></div>' +
       '<div class="exp"><small>' + p.expLabel + '</small><strong>' + p.expBig + '</strong><em>' + p.dday + '</em></div></button>' +
-      '<div class="tmr"><b>내일 ' + won(p.tmr) + ' 예정 <span>(-' + (p.price - p.tmr).toLocaleString('ko-KR') + '원)</span></b><div>' + p.urgency + '</div></div>' +
+      '<div class="tmr"><b>' + (p.next ? md(p.next.from) + '부터 ' + won(p.next.price) + ' 예정 <span>(-5%)</span>' : '기한 없는 상품 · 가격 그대로') + '</b><div>' + p.urgency + '</div></div>' +
       '</article>';
   }
 
@@ -431,7 +441,11 @@
       '<div class="muted" style="font-weight:700">' + r.brand + '</div><div style="font-size:21px;font-weight:900;line-height:1.3">' + p.name + '</div>' +
       '<div class="price big"><s>' + won(p.reg) + '</s><span class="pct">' + p.pct + '%</span><span class="now">' + won(p.price) + '</span></div></section>';
     h += '<div class="expbar"><div><small>' + p.expLabel + '</small><strong>' + p.expBig + '</strong></div><em>' + p.dday + '</em></div>';
-    h += '<div class="ladder"><div class="today"><small>오늘</small><strong>' + won(p.price) + '</strong></div><div><small>내일 예정</small><strong>' + won(p.tmr) + '</strong></div><div><small>모레 예정</small><strong>' + won(p.day2) + '</strong></div></div>';
+    h += p.steps ? '<section class="steps"><div class="row" style="align-items:baseline"><div class="h2">가격 단계</div><div class="muted">폐기 3일 전까지 5단계 · 5%씩</div></div>' +
+      p.steps.map(function (st, i) {
+        return '<div class="step' + (i === 0 ? ' now' : '') + '"><span class="n">' + (i === 0 ? '지금' : st.n + '단계') + '</span><span class="d">' + md(st.from) + ' ~ ' + md(st.to) + '</span><b>' + won(st.price) + '</b></div>';
+      }).join('') + '</section>'
+      : '<section class="steps"><div class="h2">가격 안내</div><p style="margin:0;font-size:13px;line-height:1.7;color:#5E5852">기한이 없는 상품이라 가격이 내려가지 않아요. 다 팔리면 끝나요.</p></section>';
     h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="row" style="font-size:13px"><b>남은 수량 ' + (p.night ? p.stock + '개' : '??개') + '</b><span style="color:#A33D06;font-weight:700">' + (!p.night ? '밤 10시 공개' : p.low ? '거의 다 나갔어요' : '오늘 들어온 수량의 절반 남짓') + '</span></div>' +
       (p.night ? '<div class="bar"><i style="width:' + pct + '%"></i></div>' : '') +
       '<div style="font-size:13px;font-weight:700;color:#A33D06">' + p.urgency + '</div></div>';
