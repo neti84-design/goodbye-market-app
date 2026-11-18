@@ -139,7 +139,7 @@
     return S.treasure;
   }
 
-  var STEPS = 5, STEP_PCT = 5, DISPOSE_BEFORE = 3;
+  var STEPS = 5, STEP_PCT = 5, DISPOSE_BEFORE = 1;
   function priceSteps(p, T) {
     if (p.days == null) return null;
     var end = p.days - DISPOSE_BEFORE, len = end / STEPS, out = [];
@@ -473,11 +473,11 @@
       '<div class="muted" style="font-weight:700">' + r.brand + '</div><div style="font-size:21px;font-weight:900;line-height:1.3">' + p.name + '</div>' +
       '<div class="price big"><s>' + won(p.reg) + '</s><span class="pct">' + p.pct + '%</span><span class="now">' + won(p.price) + '</span></div></section>';
     h += '<div class="expbar"><div><small>' + p.expLabel + '</small><strong>' + p.expBig + '</strong></div><em>' + p.dday + '</em></div>';
-    h += p.steps ? '<section class="steps"><div class="row" style="align-items:baseline"><div class="h2">가격 단계</div><div class="muted">폐기 3일 전까지 5단계 · 5%씩</div></div>' +
+    h += p.steps ? '<section class="steps"><div class="row" style="align-items:baseline"><div class="h2">가격 단계</div><div class="muted">소비기한 하루 전까지 5단계 · 5%씩</div></div>' +
       p.steps.map(function (st, i) {
         return '<div class="step' + (i === 0 ? ' now' : '') + (st.store ? ' store' : '') + '"><span class="n">' + (i === 0 ? '지금' : st.n + '단계') + '</span><span class="d">' + md(st.from) + ' ~ ' + md(st.to) + (st.store ? '<em>매장 현장 판매</em>' : '') + '</span><b>' + won(st.price) + '</b></div>';
-      }).join('') + (p.steps.some(function (st) { return st.store; }) ? '<p class="steps-note">앱 결제는 픽업 마감(' + mdw(p.dl) + ')까지예요. 그 뒤 단계는 매장에서만 팔아요.</p>' : '') + '</section>'
-      : '<section class="steps"><div class="h2">가격 안내</div><p style="margin:0;font-size:13px;line-height:1.7;color:#5E5852">기한이 없는 상품이라 가격이 내려가지 않아요. 다 팔리면 끝나요.</p></section>';
+      }).join('') + (p.steps.some(function (st) { return st.store; }) ? '<p class="steps-note">앱 결제는 픽업 마감(' + mdw(p.dl) + ')까지예요. 그 뒤 단계는 매장에서만 팔아요.</p>' : '') + '<p class="steps-note">소비기한 당일에도 남은 식품은 퇴비로 자원화해요.</p></section>'
+      : '<section class="steps"><div class="h2">가격 안내</div><p style="margin:0;font-size:13px;line-height:1.7;color:#5E5852">기한이 없는 상품이라 가격이 내려가지 않아요. 끝까지 남으면 기부해요.</p></section>';
     h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="row" style="font-size:13px"><b>남은 수량 ' + (p.night ? p.stock + '개' : '??개') + '</b><span style="color:#A33D06;font-weight:700">' + (!p.night ? '밤 10시 공개' : p.low ? '거의 다 나갔어요' : '오늘 들어온 수량의 절반 남짓') + '</span></div>' +
       (p.night ? '<div class="bar"><i style="width:' + pct + '%"></i></div>' : '') +
       '<div style="font-size:13px;font-weight:700;color:#A33D06">' + p.urgency + '</div></div>';
