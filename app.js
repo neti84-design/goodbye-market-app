@@ -88,6 +88,34 @@
     { id: 'i4', brand: '켈로그', name: '에너지바 크런치넛 160g', cat: '식품 · 상온', reg: 6190, from: 2490, days: 44, when: 3, canWish: false, fans: 0 },
     { id: 'i5', brand: '피죤', name: '섬유유연제 핑크로즈 2.9L', cat: '생활용품', reg: 10820, from: 4900, days: null, when: 3, canWish: true, fans: 0 }
   ];
+  /* ---------- 카테고리 (마트식 대분류 > 중분류 · 매장은 상온·냉동·비식품만) ---------- */
+  var CATS = [
+    { id: 'frozen', name: '냉동식품', subs: ['만두', '면·간편식', '떡갈비·육가공', '튀김·너겟', '아이스크림'] },
+    { id: 'noodle', name: '라면·즉석', subs: ['봉지라면', '컵라면', '즉석밥', '국·카레·짜장'] },
+    { id: 'snack', name: '과자·시리얼', subs: ['스낵', '쿠키·비스킷', '초콜릿·사탕', '시리얼·그래놀라', '에너지바'] },
+    { id: 'drink', name: '커피·음료', subs: ['커피믹스', '드립백·원두', '차', '생수·음료'] },
+    { id: 'can', name: '통조림·양념', subs: ['참치·햄', '식용유', '장류·소스', '조미료'] },
+    { id: 'paper', name: '화장지·위생', subs: ['화장지', '키친타월', '물티슈', '생리대·기저귀'] },
+    { id: 'wash', name: '세제·세탁', subs: ['주방세제', '세탁세제', '섬유유연제', '청소용품'] },
+    { id: 'kitchen', name: '주방·수납', subs: ['밀폐용기', '주방소품', '수납정리'] },
+    { id: 'toy', name: '완구·게임', subs: ['게임', '블록', '캐릭터 완구', '보드게임'] },
+    { id: 'fashion', name: '패션잡화', subs: ['스카프·소품', '양말·속옷', '가방'] },
+    { id: 'stat', name: '문구·팬시', subs: ['필기구', '노트·다이어리', '팬시'] }
+  ];
+  var CAT_OF = {
+    g5: ['snack', '쿠키·비스킷'], g4: ['frozen', '면·간편식'], g1: ['toy', '게임'], g3: ['fashion', '스카프·소품'], g2: ['toy', '캐릭터 완구'],
+    n1: ['noodle', '봉지라면'], n2: ['noodle', '즉석밥'], n3: ['can', '참치·햄'], n4: ['drink', '커피믹스'], n5: ['paper', '화장지'],
+    n6: ['can', '참치·햄'], n7: ['can', '식용유'], p1: ['frozen', '만두'], p2: ['snack', '시리얼·그래놀라'], p3: ['noodle', '봉지라면'],
+    p4: ['drink', '드립백·원두'], p5: ['wash', '주방세제'], p6: ['toy', '블록'],
+    i1: ['frozen', '떡갈비·육가공'], i2: ['noodle', '컵라면'], i3: ['toy', '블록'], i4: ['snack', '에너지바'], i5: ['wash', '섬유유연제']
+  };
+  function catName(id) { for (var k = 0; k < CATS.length; k++) if (CATS[k].id === id) return CATS[k].name; return ''; }
+  function catPath(id) { var c = CAT_OF[id]; return c ? catName(c[0]) + ' · ' + c[1] : ''; }
+
+  /* 기부: 판매 금액의 0.1% (1,000원당 1원) */
+  var DONATE = 0.001;
+  function donation(n) { return Math.max(1, Math.round(n * DONATE)); }
+
   var ZONES = ['냉동', '과자', '라면', '음료', '세제', '주방', '완구', '문구', '계산대 앞'];
   var PHOTOS = [['냉동 코너', '매대 3칸'], ['상온 식품', '박스 진열'], ['생활·완구', '뒤쪽 매대']];
 
@@ -114,7 +142,7 @@
         { label: '보물찾기 골드 태그 발견', date: md(addDays(today0(), -5)), pts: 500 },
         { label: '구매 적립', date: md(addDays(today0(), -8)), pts: 86 }
       ],
-      orders: [], queue: {},
+      orders: [], queue: {}, donated: 20,
       treasure: { date: '', tries: 3, opened: {}, found: false },
       demo: null
     };
@@ -122,10 +150,11 @@
   var S;
   try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { S = fresh(); }
   if (!S.queue) S.queue = {};
+  if (S.donated == null) S.donated = 20;
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
   /* 화면 상태 (저장 안 함) */
-  var V = { slide: 0, tab: 'home', screen: 'landing', filter: 'all', detail: null, pickIdx: 0, agree: false, lastOrder: null };
+  var V = { slide: 0, tab: 'home', screen: 'landing', cat: 'all', sub: null, low: false, q: '', detail: null, pickIdx: 0, agree: false, lastOrder: null };
 
   function isNight() {
     if (S.demo === 'night') return true;
@@ -155,7 +184,7 @@
     var exp = p.days != null ? addDays(T, p.days) : null;
     var dl = exp ? addDays(exp, -30) : addDays(T, 7);
     return {
-      raw: p, id: p.id, name: p.name, img: 'img/' + p.id + '.webp', imgL: 'img/' + p.id + '-l.webp', cat: p.cat, group: p.group, price: p.price, reg: p.reg,
+      raw: p, id: p.id, name: p.name, c1: CAT_OF[p.id][0], c2: CAT_OF[p.id][1], path: catPath(p.id), give: donation(p.price), img: 'img/' + p.id + '.webp', imgL: 'img/' + p.id + '-l.webp', cat: p.cat, group: p.group, price: p.price, reg: p.reg,
       stock: stock, low: stock < 30, night: night,
       wished: !!S.wish[p.id],
       pct: Math.round((1 - p.price / p.reg) * 100),
@@ -185,6 +214,7 @@
     lock: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
     check: function (c, s) { return '<svg width="' + (s || 16) + '" height="' + (s || 16) + '" viewBox="0 0 24 24" fill="none" stroke="' + (c || '#fff') + '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>'; },
     back: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+    search: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5E5852" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
     x: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
   };
   function barcode(seed, h) {
@@ -239,23 +269,59 @@
           : '<div class="photo locked">' + I.lock + '<b>' + x[0] + '</b><small>22:00 공개</small></div>';
       }).join('') + '</div></section>';
 
-    var F = [['all', '전체'], ['food', '식품'], ['life', '생활·완구'], ['low', '임박만']];
-    h += '<div class="chips" role="group" aria-label="상품 분류">' + F.map(function (f) {
-      return '<button class="pill" data-a="filter" data-id="' + f[0] + '" aria-pressed="' + (V.filter === f[0]) + '">' + f[1] + '</button>';
-    }).join('') + '</div>';
-
-    var list = all().filter(function (p) {
-      if (V.filter === 'food') return p.group === 'food';
-      if (V.filter === 'life') return p.group === 'life';
-      if (V.filter === 'low') return night && p.low;
-      return true;
-    });
-    if (V.filter === 'low' && !list.length) {
-      h += '<div class="card" style="text-align:center;font-size:14px;line-height:1.6;padding:22px">' + (night ? '지금 임박 상품이 없어요' : '임박 상품은 남은 수량이 공개되는<br><b style="color:#A33D06">밤 10시</b>에 보여 드려요') + '</div>';
-    }
-    h += list.map(card).join('');
+    h += '<div class="search">' + I.search + '<input id="q" type="search" placeholder="상품·브랜드 검색 (예: 라면, 커피, 레고)" value="' + esc(V.q) + '" autocomplete="off" enterkeyhint="search" aria-label="상품 검색">' +
+      '<button class="clr" data-a="clearQ" aria-label="검색어 지우기">' + I.x + '</button></div>';
+    h += '<div id="plist" style="display:flex;flex-direction:column;gap:14px">' + listHtml() + '</div>';
     h += '<div class="note">시연용 예시 상품 · 가격·수량·기한은 설명을 위한 값이에요</div>';
     return h;
+  }
+
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+  function norm(t) { return String(t).toLowerCase().replace(/\s+/g, ''); }
+  function hit(q, parts) { return norm(parts.join(' ')).indexOf(q) >= 0; }
+  function listHtml() {
+    var night = isNight(), items = all(), h = '';
+    var q = norm(V.q);
+    if (q) {
+      var found = items.filter(function (p) { return hit(q, [p.name, p.raw.brand, catName(p.c1), p.c2, p.raw.cat]); });
+      var inc = INCOMING.filter(function (it) { return hit(q, [it.name, it.brand, catPath(it.id), it.cat]); });
+      h += '<div class="row" style="align-items:baseline"><div class="h2">\u2018' + esc(V.q) + '\u2019 검색 결과 ' + found.length + '개</div>' + (inc.length ? '<button class="muted" data-a="tab" data-id="incoming" style="color:#A33D06;font-weight:700">입고 예정 ' + inc.length + '개 \u203a</button>' : '') + '</div>';
+      if (!found.length) h += '<div class="card" style="display:block;text-align:center;font-size:14px;line-height:1.6;padding:22px">지금 진열된 상품 중에는 없어요.' + (inc.length ? '<br><b style="color:#A33D06">입고 예정</b>에 ' + inc.length + '개가 있어요.' : '<br>매일 새 재고가 들어와요. 다시 찾아 주세요.') + '</div>';
+      h += found.map(card).join('');
+      if (inc.length) h += '<div class="h2" style="margin-top:4px">입고 예정에도 있어요</div>' + inc.map(function (it) {
+        return '<button class="card" data-a="tab" data-id="incoming" style="flex-direction:row;align-items:center;gap:10px;padding:12px 14px;border:1px dashed #9A928A;box-shadow:none;width:100%"><img class="thumb sm" src="img/' + it.id + '.webp" alt="">' +
+          '<div style="flex:1"><div style="font-size:14px;font-weight:700">' + it.brand + ' ' + it.name + '</div><div class="muted">' + catPath(it.id) + ' · ' + mdw(addDays(today0(), it.when)) + ' 입고 예정</div></div>' +
+          '<div style="font-size:14px;font-weight:900;color:#C84B08">' + won(it.from) + '~</div></button>';
+      }).join('');
+      return h;
+    }
+    var cnt = function (c1, c2) { return items.filter(function (p) { return p.c1 === c1 && (!c2 || p.c2 === c2); }).length; };
+    h += '<div class="cats" role="group" aria-label="카테고리">' +
+      '<button class="ctile" data-a="cat" data-id="all" aria-pressed="' + (V.cat === 'all') + '"><b>전체</b><small>' + items.length + '개</small></button>' +
+      CATS.map(function (c) {
+        var n = cnt(c.id);
+        return '<button class="ctile' + (n ? '' : ' empty') + '" data-a="cat" data-id="' + c.id + '" aria-pressed="' + (V.cat === c.id) + '"><b>' + c.name + '</b><small>' + (n ? n + '개' : '입고 준비') + '</small></button>';
+      }).join('') + '</div>';
+    var C = CATS.filter(function (c) { return c.id === V.cat; })[0];
+    h += '<div class="subs" role="group" aria-label="세부 분류">' +
+      (C ? '<button class="pill" data-a="sub" data-id="" aria-pressed="' + !V.sub + '">' + C.name + ' 전체</button>' + C.subs.map(function (sb) {
+        var n = cnt(C.id, sb);
+        return '<button class="pill' + (n ? '' : ' zero') + '" data-a="sub" data-id="' + sb + '" aria-pressed="' + (V.sub === sb) + '">' + sb + ' <span>' + n + '</span></button>';
+      }).join('') : '') +
+      '<button class="pill o" data-a="low" aria-pressed="' + V.low + '">임박만</button></div>';
+    var list = items.filter(function (p) {
+      if (C && p.c1 !== C.id) return false;
+      if (C && V.sub && p.c2 !== V.sub) return false;
+      if (V.low) return night && p.low;
+      return true;
+    });
+    if (!list.length) {
+      h += '<div class="card" style="display:block;text-align:center;font-size:14px;line-height:1.6;padding:22px">' +
+        (V.low && !night ? '임박 상품은 남은 수량이 공개되는<br><b style="color:#A33D06">밤 10시</b>에 보여 드려요'
+          : V.low ? '이 분류에는 지금 임박 상품이 없어요'
+            : '지금 진열된 상품이 없어요.<br>재고가 모이면 바로 채워져요.<br><button data-a="tab" data-id="incoming" style="color:#A33D06;font-weight:700;min-height:36px">입고 예정 보기 \u203a</button>') + '</div>';
+    }
+    return h + list.map(card).join('');
   }
 
   function card(p) {
@@ -263,7 +329,7 @@
       : p.low ? '<span class="tag low">임박 · ' + p.stock + '개 남음</span>'
         : '<span class="muted">남은 수량 ' + p.stock + '개</span>';
     return '<article class="card">' +
-      '<div class="row"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="tag cat">' + p.cat + '</span>' + badge + '</div>' +
+      '<div class="row"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="tag cat">' + p.path + '</span>' + badge + '</div>' +
       '<button class="icon-btn heart" data-a="wish" data-id="' + p.id + '" aria-label="' + p.name + (p.wished ? ' 찜 해제' : ' 찜하기') + '" aria-pressed="' + p.wished + '">' + I.heart(p.wished) + '</button></div>' +
       '<button class="p-main" data-a="open" data-id="' + p.id + '"><img class="thumb" src="' + p.img + '" alt="" loading="lazy"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">' +
       '<div class="p-name">' + p.name + '</div>' +
@@ -285,7 +351,7 @@
         : '<span class="tag cat">점포에서 모으는 중</span>';
       return '<article class="card" style="gap:8px"><div class="row"><div style="display:flex;gap:6px">' + tags + '</div>' + right + '</div>' +
         '<div style="display:flex;gap:12px;align-items:center">' + '<img class="thumb" src="img/' + it.id + '.webp" alt="">' +
-        '<div class="inc-body" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><div class="muted" style="font-weight:700">' + it.brand + ' · ' + it.cat + '</div><div class="p-name">' + it.name + '</div>' +
+        '<div class="inc-body" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><div class="muted" style="font-weight:700">' + it.brand + ' · ' + catPath(it.id) + '</div><div class="p-name">' + it.name + '</div>' +
         '<div class="row" style="align-items:baseline"><div style="font-size:13px;color:#5E5852">' + (it.days != null ? '소비기한 <b style="color:#2B2B2B;font-size:15px">' + exp + '</b>' : '<b style="color:#2B2B2B;font-size:15px">기한 없는 상품</b>') + '</div>' +
         '<div class="from"><s>' + won(it.reg) + '</s> ' + won(it.from) + '<span>부터 시작</span></div></div></div></div></article>';
     };
@@ -305,7 +371,7 @@
     var sel = items.filter(function (p) { return !S.unsel[p.id] && p.stock > 0; });
     var total = sel.reduce(function (a, p) { return a + p.price; }, 0);
     var dl = sel.length ? sel.reduce(function (a, p) { return p.dl < a ? p.dl : a; }, sel[0].dl) : null;
-    return { items: items, sel: sel, total: total, earn: Math.floor(total * 0.01), dl: dl };
+    return { items: items, sel: sel, total: total, earn: Math.floor(total * 0.01), give: total ? donation(total) : 0, dl: dl };
   }
 
   function wishView() {
@@ -325,7 +391,7 @@
     }).join('');
     if (x.items.length) {
       var ok = night && x.sel.length > 0;
-      h += '<div class="sum"><div><small>선택 ' + x.sel.length + '개</small><strong>' + won(x.total) + '</strong></div>' +
+      h += '<div class="sum"><div><small>선택 ' + x.sel.length + '개' + (x.give ? ' · 기부 ' + won(x.give) + ' 적립' : '') + '</small><strong>' + won(x.total) + '</strong></div>' +
         (ok ? '<button class="btn" data-a="checkout">픽업 결제하기</button>'
           : '<span class="btn off">' + (night ? '상품을 골라 주세요' : '결제는 밤 10시 재고 공개 후') + '</span>') + '</div>';
     }
@@ -360,6 +426,10 @@
       '<div style="font-size:12px;color:#D6D2CC;text-align:center">계산할 때 보여 주시면 포인트가 쌓여요</div></section>';
     h += '<section class="card" style="flex-direction:row;justify-content:space-between;align-items:center"><div><div class="muted" style="font-size:13px">사용 가능한 포인트</div><div style="font-size:24px;font-weight:900">' + S.points.toLocaleString('ko-KR') + 'P</div></div>' +
       '<div class="muted" style="text-align:right;line-height:1.6">구매 금액의 1% 적립<br>보물 발견 +500P</div></section>';
+    var monthGive = Math.round(5500000000 / 12 * DONATE * today0().getDate() / 30 / 10) * 10;
+    h += '<section class="give"><div class="row"><div class="h2">내가 함께 쌓은 기부금</div><b class="give-n">' + won(S.donated) + '</b></div>' +
+      '<p>굿바이마켓은 판매 금액의 <b>0.1%</b>(1,000원당 1원)를 기부금으로 적립해요. 끝까지 남은 식품은 퇴비로 자원화하고, 생활용품·완구는 기부해요.</p>' +
+      '<div class="kv" style="font-size:13px"><span>김포점 이번 달 기부 적립 (예시)</span><b>' + won(monthGive) + '</b></div></section>';
     if (S.orders.length) {
       h += '<section class="card" style="gap:4px"><div class="h2" style="margin-bottom:4px">내 픽업 주문</div>' + S.orders.map(function (o) {
         return '<div class="hist" style="align-items:flex-start"><div><div style="font-size:14px;font-weight:700">' + o.title + '</div><div class="muted">픽업 ' + o.pickup + ' · 마감 <b style="color:#A33D06">' + o.deadline + '</b></div></div><div style="font-size:14px;font-weight:900">' + o.total + '</div></div>';
@@ -390,7 +460,7 @@
     h += '<section class="warn"><div class="k">꼭 확인해 주세요</div><div class="big">' + (x.dl ? mdw(x.dl) : '') + '까지 찾으러 오셔야 해요</div>' +
       '<p>소비기한이 임박한 상품이라, 소비기한 한 달 전까지 픽업하셔야 해요. 생활용품·완구는 결제 후 7일까지예요. <b style="color:#A33D06">픽업 마감이 지나면 환불이 안 돼요.</b></p></section>';
     h += '<section style="display:flex;flex-direction:column;gap:8px"><div class="h2">언제 찾으러 오실까요?</div><div class="days">' + days + '</div><div class="muted">김포점 픽업대 · 10:00~22:00 · 멤버십 바코드로 찾아가요</div></section>';
-    h += '<section class="card" style="gap:8px"><div class="kv"><span>상품 금액</span><b>' + won(x.total) + '</b></div><div class="kv"><span>적립 예정 포인트 (1%)</span><b style="color:#C84B08">+' + x.earn.toLocaleString('ko-KR') + 'P</b></div><div class="kv"><span>결제 수단</span><span>시연용 (실제 결제 안 됨)</span></div></section>';
+    h += '<section class="card" style="gap:8px"><div class="kv"><span>상품 금액</span><b>' + won(x.total) + '</b></div><div class="kv"><span>적립 예정 포인트 (1%)</span><b style="color:#C84B08">+' + x.earn.toLocaleString('ko-KR') + 'P</b></div><div class="kv"><span>기부 적립 (판매 금액의 0.1%)</span><b style="color:#2E7D4F">' + won(x.give) + '</b></div><div class="kv"><span>결제 수단</span><span>시연용 (실제 결제 안 됨)</span></div></section>';
     h += '<button data-a="agree" aria-pressed="' + V.agree + '" style="display:flex;gap:10px;align-items:center;min-height:44px"><span class="check' + (V.agree ? ' on' : '') + '">' + I.check() + '</span><span style="font-size:14px">픽업 마감일과 환불 불가 안내를 확인했어요</span></button>';
     h += '</div></div><div class="bottom">' + (V.agree && x.sel.length ? '<button class="btn full" data-a="pay">' + won(x.total) + ' 결제하기</button>'
       : '<div class="btn full off">안내를 확인하면 결제할 수 있어요</div>') + '</div>';
@@ -405,7 +475,8 @@
       '<section class="card" style="align-items:center"><div class="muted" style="font-size:13px;font-weight:700">픽업 바코드</div>' + barcode(o.no + '0000000000', 56) +
       '<div style="width:100%;display:flex;flex-direction:column;gap:6px;margin-top:4px"><div class="kv"><span>픽업 예정일</span><b>' + o.pickup + '</b></div>' +
       '<div class="kv"><span>픽업 마감</span><b style="color:#A33D06">' + o.deadline + '</b></div><div class="kv"><span>결제 금액</span><b>' + o.total + '</b></div>' +
-      '<div class="kv"><span>적립 포인트</span><b style="color:#C84B08">+' + o.earn + '</b></div></div></section>' +
+      '<div class="kv"><span>적립 포인트</span><b style="color:#C84B08">+' + o.earn + '</b></div>' + (o.give ? '<div class="kv"><span>기부 적립</span><b style="color:#2E7D4F">' + o.give + '</b></div>' : '') + '</div></section>' +
+      (o.give ? '<section class="give"><p>이번 결제로 <b>' + o.give + '</b>이 기부금으로 적립됐어요. 판매 금액의 0.1%는 늘 기부해요. 고맙습니다!</p></section>' : '') +
       '<div class="warn" style="border-width:0"><p>픽업 마감(' + o.deadline + ')이 지나면 <b style="color:#A33D06">환불이 안 돼요.</b> 마감 3일 전에 알림을 한 번 더 보내 드릴게요. 주문은 멤버십 탭에서 다시 볼 수 있어요.</p></div>' +
       '<button class="btn full ink" data-a="home">진열 상품 더 보기</button></div></div>';
   }
@@ -468,7 +539,7 @@
     var h = '<div class="topbar"><button class="icon-btn" data-a="close" aria-label="목록으로 돌아가기">' + I.back + '</button><div style="font-size:17px;font-weight:900;flex:1">상품 상세</div>' +
       '<button class="icon-btn heart" data-a="wish" data-id="' + p.id + '" aria-label="' + (p.wished ? '찜 해제' : '찜하기') + '" aria-pressed="' + p.wished + '">' + I.heart(p.wished) + '</button></div>';
     h += '<main class="scroll"><div class="hero"><img src="' + p.imgL + '" alt="' + p.name + '"></div><div class="pad" style="padding-top:16px">';
-    h += '<section style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px;flex-wrap:wrap">' + (r.week ? '<span class="tag week">금주의 굿바이템</span>' : '') + '<span class="tag cat">' + p.cat + '</span>' + (r.reason ? '<span class="tag cat" style="background:#2B2B2B;color:#fff">사유 · ' + r.reason + '</span>' : '') +
+    h += '<section style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px;flex-wrap:wrap">' + (r.week ? '<span class="tag week">금주의 굿바이템</span>' : '') + '<span class="tag cat">' + p.path + '</span>' + (r.reason ? '<span class="tag cat" style="background:#2B2B2B;color:#fff">사유 · ' + r.reason + '</span>' : '') +
       (!p.night ? '<span class="tag hidden">남은 수량 ??개</span>' : p.low ? '<span class="tag low">임박 · ' + p.stock + '개 남음</span>' : '') + '</div>' +
       '<div class="muted" style="font-weight:700">' + r.brand + '</div><div style="font-size:21px;font-weight:900;line-height:1.3">' + p.name + '</div>' +
       '<div class="price big"><s>' + won(p.reg) + '</s><span class="pct">' + p.pct + '%</span><span class="now">' + won(p.price) + '</span></div></section>';
@@ -482,11 +553,13 @@
       (p.night ? '<div class="bar"><i style="width:' + pct + '%"></i></div>' : '') +
       '<div style="font-size:13px;font-weight:700;color:#A33D06">' + p.urgency + '</div></div>';
     h += queueBox(p);
+    h += '<section class="give"><div class="row"><div class="h2">이 상품을 사면 기부가 쌓여요</div><b class="give-n">' + won(p.give) + '</b></div>' +
+      '<p>판매 금액의 <b>0.1%</b>(1,000원당 1원)는 기부금으로 적립돼요. ' + won(p.price) + '짜리 이 상품 하나에 <b>' + won(p.give) + '</b>이 쌓여요.' + (p.raw.days == null ? ' 끝까지 팔리지 않은 생활용품·완구도 기부해요.' : '') + '</p></section>';
     h += '<section class="card" style="gap:8px"><div class="h2">상품 소개</div><p style="margin:0;font-size:14px;line-height:1.7">' + r.desc + '</p></section>';
     h += '<section class="card" style="gap:8px"><div class="h2">상품 정보</div>' +
       '<div class="kv"><span>브랜드</span><b>' + r.brand + '</b></div><div class="kv"><span>용량·구성</span><b>' + r.size + '</b></div>' +
       '<div class="kv"><span>보관 방법</span><b style="text-align:right;max-width:62%">' + r.keep + '</b></div>' +
-      '<div class="kv"><span>소비기한</span><b>' + p.expFull + '</b></div><div class="kv"><span>정상가</span><b>' + won(p.reg) + '</b></div></section>';
+      '<div class="kv"><span>소비기한</span><b>' + p.expFull + '</b></div><div class="kv"><span>정상가</span><b>' + won(p.reg) + '</b></div><div class="kv"><span>기부 적립 (판매가 0.1%)</span><b style="color:#2E7D4F">' + won(p.give) + '</b></div></section>';
     h += '<section class="card" style="gap:8px;background:#FFF0E5;box-shadow:none"><div class="h2" style="color:#A33D06">왜 이 가격인가요?</div><p style="margin:0;font-size:14px;line-height:1.7">' + r.why + ' 품질에는 문제가 없는 새 상품이에요.</p></section>';
     h += '<section class="card" style="gap:6px"><div class="h2">픽업 안내</div><p style="margin:0;font-size:13px;line-height:1.7;color:#5E5852">' + p.pickupRule + '하셔야 해요. <b style="color:#A33D06">마감이 지나면 환불이 안 돼요.</b><br>김포점 픽업대 · 10:00~22:00 · 멤버십 바코드로 찾아가요.</p></section>';
     h += '</div></main><div class="bottom" style="display:flex;gap:8px"><button class="btn line" style="flex:1;min-height:52px" data-a="wish" data-id="' + p.id + '">' + (p.wished ? '찜 해제' : '찜하기') + '</button>' +
@@ -528,7 +601,10 @@
   /* ---------- 동작 ---------- */
   var A = {
     tab: function (id) { V.tab = id; scrollMemo[V.screen + ':' + id] = 0; },
-    filter: function (id) { V.filter = id; },
+    cat: function (id) { V.cat = id; V.sub = null; },
+    sub: function (id) { V.sub = id || null; },
+    low: function () { V.low = !V.low; },
+    clearQ: function () { V.q = ''; },
     open: function (id) { V.detail = id; scrollMemo.detail = 0; },
     close: function () { V.detail = null; },
     wish: function (id) {
@@ -557,12 +633,13 @@
       var base = new Date().getHours() < OPEN_H && !S.demo ? 0 : 1;
       var T = today0();
       x.sel.forEach(function (p) { S.sold[p.id] = (S.sold[p.id] || 0) + 1; delete S.wish[p.id]; });
-      S.points += x.earn;
+      S.points += x.earn; S.donated += x.give;
       S.history.unshift({ label: '구매 적립 (' + x.sel.length + '개 상품)', date: md(T), pts: x.earn });
       var o = {
         no: 'GB-' + (T.getMonth() + 1) + T.getDate() + '-' + String(1000 + Math.floor(Math.random() * 9000)),
         count: x.sel.length, total: won(x.total), earn: x.earn.toLocaleString('ko-KR') + 'P',
         pickup: mdw(addDays(T, base + V.pickIdx)), deadline: mdw(x.dl),
+        give: won(x.give),
         title: x.sel[0].name + (x.sel.length > 1 ? ' 외 ' + (x.sel.length - 1) + '개' : '')
       };
       S.orders.unshift(o); save();
@@ -600,6 +677,12 @@
     var fn = A[el.getAttribute('data-a')];
     if (fn) { fn(el.getAttribute('data-id')); render(); }
   });
+  app.addEventListener('input', function (e) {
+    if (e.target.id !== 'q') return;
+    V.q = e.target.value;
+    var pl = document.getElementById('plist'); if (pl) pl.innerHTML = listHtml();
+  });
+  app.addEventListener('keydown', function (e) { if (e.target.id === 'q' && e.key === 'Enter') e.target.blur(); });
   app.addEventListener('scroll', function (e) {
     var sl = e.target; if (!sl.classList || !sl.classList.contains('slider')) return;
     var w = sl.children[0].offsetWidth + 12, i = Math.round(sl.scrollLeft / w);
