@@ -350,7 +350,7 @@
         '<div class="from"><s>' + won(it.reg) + '</s> ' + won(it.from) + '<span>부터 시작</span></div></div></div></div></article>';
     };
     var h = '<section class="truck"><div class="row"><div style="display:flex;gap:8px;align-items:center;font-size:15px;font-weight:900;white-space:nowrap">' + I.truck('#FFB27A') + '우리 매장으로 이동 중</div>' +
-      '<div style="font-size:13px;font-weight:700;color:#FFB27A;white-space:nowrap">' + mdw(addDays(T, 1)) + ' 오전 진열</div></div></section>';
+      '<div style="font-size:13px;font-weight:700;color:#FFB27A;white-space:nowrap">' + md(addDays(T, 1)) + ' 오전 진열</div></div></section>';
     h += '<div class="h2">내일 입고 · ' + mdw(addDays(T, 1)) + '</div>' + INCOMING.filter(function (i) { return i.when === 1; }).map(item).join('');
     h += '<div class="h2" style="margin-top:4px">이번 주 입고 · ' + mdw(addDays(T, 3)) + '</div>' + INCOMING.filter(function (i) { return i.when > 1; }).map(item).join('');
     h += '<div class="card" style="font-size:12px;color:#5E5852;line-height:1.6">찜한 입고 예정 상품은 진열되는 순간 알림을 보내 드려요. 수량이 적은 상품은 현장 판매만 해요.</div>';
