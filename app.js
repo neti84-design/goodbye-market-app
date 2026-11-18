@@ -246,20 +246,13 @@
     var night = isNight(), now = new Date();
     var h = '';
     if (!night) {
-      var close = new Date(); close.setHours(CLOSE_H, 0, 0, 0);
-      var left = Math.max(0, Math.ceil((close - now) / 60000));
-      var leftTxt = left >= 60 ? Math.floor(left / 60) + '시간 ' + (left % 60 ? left % 60 + '분' : '') : left + '분';
-      h += '<section class="banner day"><div class="row"><span class="badge">지금은 영업 중 · ' + (S.demo ? '오후 2:00' : hm(now)) + '</span>' +
-        '<span class="muted" style="color:#D6D2CC">재고 공개까지 ' + (S.demo ? '8시간' : leftTxt) + '</span></div>' +
-        '<div class="big">오늘 남은 수량은 <span style="color:#FFB27A">??개</span></div>' +
-        '<div class="txt">영업 중에는 매장 손님이 지금도 담아 가고 있어요. 밤 10시 영업이 끝나면 남은 재고를 공개해요.</div>' +
-        '<button class="demo" data-a="demo">시연: 밤 10시로 바꿔 보기</button></section>';
+      h += '<section class="sbar day"><div class="row"><span class="onoff"><b class="on">매장 ON</b><i>·</i><b class="off">온라인 OFF</b></span>' +
+        '<button class="demo" data-a="demo">시연: 밤 10시</button></div>' +
+        '<p>지금은 매장 고객님들이 담고 있어서 남은 수량이 정확하지 않아요. 밤 10시에 주문 가능한 재고를 확인할 수 있어요.</p></section>';
     } else {
-      var early = !S.demo && new Date().getHours() < OPEN_H;
-      h += '<section class="banner night"><div class="row"><span class="badge">영업 종료 · 밤 10:00 이후</span>' +
-        '<span style="font-size:12px;font-weight:700;color:#2A1405">' + (early ? '오늘' : '내일') + ' 오전 10시 개점</span></div>' +
-        '<div class="big">오늘 남은 재고 공개!</div>' +
-        '<button class="demo" data-a="demo">' + (S.demo ? '시연: 낮으로 돌아가기' : '시연: 낮 화면 보기') + '</button></section>';
+      h += '<section class="sbar night"><div class="row"><span class="onoff"><b class="off">매장 OFF</b><i>·</i><b class="on">온라인 ON</b></span>' +
+        '<button class="demo" data-a="demo">' + (S.demo ? '시연: 낮으로' : '시연: 낮 화면') + '</button></div>' +
+        '<p>밤 10시 이후부터 온라인 주문 가능해요</p></section>';
     }
 
     h += '<div class="search">' + I.search + '<input id="q" type="search" placeholder="상품·브랜드 검색 (예: 라면, 커피, 레고)" value="' + esc(V.q) + '" autocomplete="off" enterkeyhint="search" aria-label="상품 검색">' +
