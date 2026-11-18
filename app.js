@@ -259,7 +259,6 @@
       h += '<section class="banner night"><div class="row"><span class="badge">영업 종료 · 밤 10:00 이후</span>' +
         '<span style="font-size:12px;font-weight:700;color:#2A1405">' + (early ? '오늘' : '내일') + ' 오전 10시 개점</span></div>' +
         '<div class="big">오늘 남은 재고 공개!</div>' +
-        '<div class="txt">마감 후 실제로 남은 수량이에요. 지금 찜하고 결제하면 ' + (early ? '오늘' : '내일') + '부터 픽업할 수 있어요. 소비기한이 가까워지면 5%씩 단계별로 내려가요.</div>' +
         '<button class="demo" data-a="demo">' + (S.demo ? '시연: 낮으로 돌아가기' : '시연: 낮 화면 보기') + '</button></section>';
     }
 
