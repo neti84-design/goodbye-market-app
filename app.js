@@ -117,7 +117,6 @@
   function donation(n) { return Math.max(1, Math.round(n * DONATE)); }
 
   var ZONES = ['냉동', '과자', '라면', '음료', '세제', '주방', '완구', '문구', '계산대 앞'];
-  var PHOTOS = [['냉동 코너', '매대 3칸'], ['상온 식품', '박스 진열'], ['생활·완구', '뒤쪽 매대']];
 
   /* ---------- 날짜 도우미 ---------- */
   function today0() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
@@ -253,7 +252,7 @@
       h += '<section class="banner day"><div class="row"><span class="badge">지금은 영업 중 · ' + (S.demo ? '오후 2:00' : hm(now)) + '</span>' +
         '<span class="muted" style="color:#D6D2CC">재고 공개까지 ' + (S.demo ? '8시간' : leftTxt) + '</span></div>' +
         '<div class="big">오늘 남은 수량은 <span style="color:#FFB27A">??개</span></div>' +
-        '<div class="txt">영업 중에는 매장 손님이 지금도 담아 가고 있어요. 밤 10시 영업이 끝나면 남은 재고와 매장 진열 사진을 공개해요.</div>' +
+        '<div class="txt">영업 중에는 매장 손님이 지금도 담아 가고 있어요. 밤 10시 영업이 끝나면 남은 재고를 공개해요.</div>' +
         '<button class="demo" data-a="demo">시연: 밤 10시로 바꿔 보기</button></section>';
     } else {
       var early = !S.demo && new Date().getHours() < OPEN_H;
@@ -263,11 +262,6 @@
         '<div class="txt">마감 후 실제로 남은 수량이에요. 지금 찜하고 결제하면 ' + (early ? '오늘' : '내일') + '부터 픽업할 수 있어요. 소비기한이 가까워지면 5%씩 단계별로 내려가요.</div>' +
         '<button class="demo" data-a="demo">' + (S.demo ? '시연: 낮으로 돌아가기' : '시연: 낮 화면 보기') + '</button></section>';
     }
-    h += '<section style="display:flex;flex-direction:column;gap:8px"><div class="row" style="align-items:baseline"><div class="h2">오늘 밤 매장 진열 사진</div><div class="muted">' + (night ? '22:05 촬영' : '밤 10시 공개') + '</div></div><div class="photos">' +
-      PHOTOS.map(function (x) {
-        return night ? '<div class="photo open"><b>' + x[0] + '</b><small>' + x[1] + '</small><small>(사진 자리)</small></div>'
-          : '<div class="photo locked">' + I.lock + '<b>' + x[0] + '</b><small>22:00 공개</small></div>';
-      }).join('') + '</div></section>';
 
     h += '<div class="search">' + I.search + '<input id="q" type="search" placeholder="상품·브랜드 검색 (예: 라면, 커피, 레고)" value="' + esc(V.q) + '" autocomplete="off" enterkeyhint="search" aria-label="상품 검색">' +
       '<button class="clr" data-a="clearQ" aria-label="검색어 지우기">' + I.x + '</button></div>';
@@ -348,18 +342,15 @@
         ? '<button class="pill o" data-a="wishIn" data-id="' + it.id + '" aria-pressed="' + on + '">' + (on ? '찜 완료' : '찜하기') + '</button>'
         : '<span class="nowish">현장 판매만 · 찜 불가</span>';
       var tags = it.when === 1 ? '<span class="tag move">이동 중</span>' + (it.fans ? '<span class="tag low">인기 · 찜 ' + (it.fans + (on ? 1 : 0)) + '명</span>' : '')
-        : '<span class="tag cat">점포에서 모으는 중</span>';
+        : '<span class="tag cat">입고 준비 중</span>';
       return '<article class="card" style="gap:8px"><div class="row"><div style="display:flex;gap:6px">' + tags + '</div>' + right + '</div>' +
         '<div style="display:flex;gap:12px;align-items:center">' + '<img class="thumb" src="img/' + it.id + '.webp" alt="">' +
         '<div class="inc-body" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><div class="muted" style="font-weight:700">' + it.brand + ' · ' + catPath(it.id) + '</div><div class="p-name">' + it.name + '</div>' +
         '<div class="row" style="align-items:baseline"><div style="font-size:13px;color:#5E5852">' + (it.days != null ? '소비기한 <b style="color:#2B2B2B;font-size:15px">' + exp + '</b>' : '<b style="color:#2B2B2B;font-size:15px">기한 없는 상품</b>') + '</div>' +
         '<div class="from"><s>' + won(it.reg) + '</s> ' + won(it.from) + '<span>부터 시작</span></div></div></div></div></article>';
     };
-    var h = '<section class="truck"><div class="row"><div style="display:flex;gap:8px;align-items:center;font-size:16px;font-weight:900">' + I.truck('#FFB27A') + '지금 이동 중</div>' +
-      '<div style="font-size:12px;color:#D6D2CC">' + mdw(addDays(T, 1)) + ' 오전 진열</div></div>' +
-      '<div class="route"><div class="stop"><div class="dot done"></div>마트·슈퍼 점포</div><div class="seg done"></div>' +
-      '<div class="stop now"><div class="dot now"></div>오산센터 출발</div><div class="seg"></div>' +
-      '<div class="stop"><div class="dot"></div>김포 매장</div></div></section>';
+    var h = '<section class="truck"><div class="row"><div style="display:flex;gap:8px;align-items:center;font-size:15px;font-weight:900;white-space:nowrap">' + I.truck('#FFB27A') + '우리 매장으로 이동 중</div>' +
+      '<div style="font-size:13px;font-weight:700;color:#FFB27A;white-space:nowrap">' + mdw(addDays(T, 1)) + ' 오전 진열</div></div></section>';
     h += '<div class="h2">내일 입고 · ' + mdw(addDays(T, 1)) + '</div>' + INCOMING.filter(function (i) { return i.when === 1; }).map(item).join('');
     h += '<div class="h2" style="margin-top:4px">이번 주 입고 · ' + mdw(addDays(T, 3)) + '</div>' + INCOMING.filter(function (i) { return i.when > 1; }).map(item).join('');
     h += '<div class="card" style="font-size:12px;color:#5E5852;line-height:1.6">찜한 입고 예정 상품은 진열되는 순간 알림을 보내 드려요. 수량이 적은 상품은 현장 판매만 해요.</div>';
