@@ -328,7 +328,6 @@
       '<div class="p-name">' + p.name + '</div>' +
       '<div class="price"><s>' + won(p.reg) + '</s><span class="pct">' + p.pct + '%</span><span class="now">' + won(p.price) + '</span></div></div>' +
       '<div class="exp"><small>' + p.expLabel + '</small><strong>' + p.expBig + '</strong><em>' + p.dday + '</em></div></button>' +
-      '<div class="tmr"><b>' + (p.next ? md(p.next.from) + '부터 ' + won(p.next.price) + ' 예정 <span>(-5%' + (p.next.store ? ' · 매장 현장 판매만' : '') + ')</span>' : '기한 없는 상품 · 가격 그대로') + '</b><div>' + p.urgency + '</div></div>' +
       '</article>';
   }
 
