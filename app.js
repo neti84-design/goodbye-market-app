@@ -116,7 +116,6 @@
   var DONATE = 0.001;
   function donation(n) { return Math.max(1, Math.round(n * DONATE)); }
 
-  var ZONES = ['냉동', '과자', '라면', '음료', '세제', '주방', '완구', '문구', '계산대 앞'];
 
   /* ---------- 날짜 도우미 ---------- */
   function today0() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
@@ -163,7 +162,7 @@
   }
   function treasure() {
     var t = ymd(today0());
-    if (S.treasure.date !== t) { S.treasure = { date: t, tries: 3, opened: {}, found: false }; save(); }
+    if (S.treasure.date !== t || !S.treasure.v2) { S.treasure = { date: t, v2: true, tries: window.GBHunt ? GBHunt.TRIES : 5, opened: {}, found: false }; save(); }
     return S.treasure;
   }
 
@@ -388,18 +387,13 @@
   }
 
   function treasureView() {
-    var t = treasure();
-    var GOLD = 6;
-    var msg = t.found ? '찾았어요! 500P 적립 · 매장 골드 태그 상품도 찾아보세요'
-      : t.tries <= 0 ? '오늘 기회를 다 썼어요. 내일 다시 도전!' : '구역을 눌러 골드 태그를 찾아보세요';
-    return '<section class="gold"><div class="k">오늘의 보물찾기 이벤트</div><div style="font-size:19px;font-weight:900">매장에 골드 태그 5개를 숨겼어요</div>' +
-      '<div style="font-size:13px;line-height:1.6">골드 태그가 붙은 상품을 찾으면 그 자리에서 초특가! 계산대에서 멤버십 바코드를 보여 주면 포인트도 함께 쌓여요.</div></section>' +
-      '<section class="card" style="gap:12px"><div class="row"><div class="h2">앱 속 매장 지도에서 찾기</div><div style="font-size:12px;font-weight:700;color:#C84B08">오늘 남은 기회 ' + t.tries + '번</div></div>' +
-      '<div class="zones">' + ZONES.map(function (z, i) {
-        var o = !!t.opened[i], hit = o && i === GOLD;
-        return '<button class="zone' + (hit ? ' hit' : o ? ' miss' : '') + '" data-a="zone" data-id="' + i + '" aria-label="' + z + ' 구역 살펴보기"><b>' + z + '</b><span>' + (o ? (hit ? '골드 태그!' : '없어요') : '?') + '</span></button>';
-      }).join('') + '</div><div style="font-size:13px;font-weight:700;text-align:center;color:' + (t.found ? '#7A5A00' : '#5E5852') + '">' + msg + '</div></section>' +
-      '<section class="card" style="gap:6px"><div class="h2">오늘의 매장 힌트</div><div style="font-size:13px;line-height:1.7">1. 차가운 곳, 맨 위 칸을 살펴보세요<br>2. 블록 상자들 사이에 숨어 있어요<br>3. 계산대에서 가장 가까운 매대</div></section>';
+    var t = treasure(), n = window.GBHunt ? GBHunt.TRIES : 5;
+    var msg = t.found ? '오늘 골드 태그를 찾았어요! 500P 적립 완료' : t.tries <= 0 ? '오늘 기회를 다 썼어요. 내일 다시 도전!' : '오늘 남은 기회 ' + t.tries + '번 / ' + n + '번';
+    return '<section class="gold"><div class="k">오늘의 보물찾기 이벤트</div><div style="font-size:19px;font-weight:900">매장 어딘가에 골드 태그가 숨어 있어요</div>' +
+      '<div style="font-size:13px;line-height:1.6">앱 속 김포점 지도를 걸어 다니며 매대를 뒤져 보세요. 찾으면 500P! 실제 매장 같은 자리의 골드 태그 상품은 그 자리에서 초특가예요.</div></section>' +
+      '<button class="hentry" data-a="hunt"><div class="hstore"><div class="sign">GOOD-BUY</div><div class="wall"><div class="glass"></div></div><i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i></div>' +
+      '<div class="htxt"><b>매장 안으로 들어가기</b><span>' + msg + '</span></div></button>' +
+      '<section class="card" style="gap:6px"><div class="h2">이렇게 찾아요</div><div style="font-size:13px;line-height:1.8">1. 아래쪽 코너 이름을 누르면 그 자리로 걸어가요<br>2. 지도를 손가락으로 끌어 매장을 둘러봐요<br>3. 가까이 가면 반짝이는 <b>?</b> 자리가 보여요. 눌러서 뒤져 보세요<br>4. 꽝이면 뜨거운지 차가운지 힌트를 드려요</div></section>';
   }
 
   function memberView() {
@@ -558,6 +552,19 @@
     var key = V.detail ? 'detail' : V.screen + ':' + V.tab;
     if (sc && render.lastKey) scrollMemo[render.lastKey] = sc.scrollTop;
     var h;
+    if (render.unhunt) { render.unhunt(); render.unhunt = null; }
+    if (V.screen === 'hunt' && !V.detail) {
+      app.innerHTML = GBHunt.html(treasure()); render.lastKey = 'hunt';
+      render.unhunt = GBHunt.mount({
+        st: treasure(), save: save,
+        onFind: function () { S.points += 500; S.history.unshift({ label: '보물찾기 골드 태그 발견', date: md(today0()), pts: 500 }); save(); }
+      }, {
+        pos: V.huntPos, skipGate: V.huntIn,
+        savePos: function (p) { V.huntPos = { x: p.x, y: p.y }; },
+        entered: function () { V.huntIn = true; }
+      });
+      return;
+    }
     if (V.detail) h = detailView();
     else if (V.screen === 'landing') h = landingView();
     else if (V.screen === 'checkout') h = checkoutView();
@@ -636,17 +643,8 @@
       toast(S.queue[id] + '번째로 줄 섰어요 · 밤 10시에 알려 드려요');
     },
     unqueue: function (id) { delete S.queue[id]; save(); toast('줄에서 빠졌어요'); },
-    zone: function (id) {
-      var t = treasure(), i = +id;
-      if (t.found || t.tries <= 0 || t.opened[i]) return;
-      t.opened[i] = true; t.tries -= 1;
-      if (i === 6) {
-        t.found = true; S.points += 500;
-        S.history.unshift({ label: '보물찾기 골드 태그 발견', date: md(today0()), pts: 500 });
-        toast('골드 태그 발견! 500P 적립');
-      }
-      save();
-    },
+    hunt: function () { V.screen = 'hunt'; V.huntIn = false; },
+    huntExit: function () { V.screen = 'tabs'; V.tab = 'treasure'; },
     reset: function () {
       if (!window.confirm('찜·포인트·주문 기록을 처음 상태로 되돌릴까요?')) return;
       S = fresh(); save(); V.tab = 'home'; toast('처음 상태로 되돌렸어요');
