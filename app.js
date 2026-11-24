@@ -162,7 +162,7 @@
   }
   function treasure() {
     var t = ymd(today0());
-    if (S.treasure.date !== t || !S.treasure.v2) { S.treasure = { date: t, v2: true, tries: window.GBHunt ? GBHunt.TRIES : 5, opened: {}, found: false }; save(); }
+    if (S.treasure.date !== t || !S.treasure.v3) { S.treasure = { date: t, v3: true, tries: window.GBHunt ? GBHunt.TRIES : 5, opened: {}, found: false }; save(); }
     return S.treasure;
   }
 
@@ -390,10 +390,10 @@
     var t = treasure(), n = window.GBHunt ? GBHunt.TRIES : 5;
     var msg = t.found ? '오늘 골드 태그를 찾았어요! 500P 적립 완료' : t.tries <= 0 ? '오늘 기회를 다 썼어요. 내일 다시 도전!' : '오늘 남은 기회 ' + t.tries + '번 / ' + n + '번';
     return '<section class="gold"><div class="k">오늘의 보물찾기 이벤트</div><div style="font-size:19px;font-weight:900">매장 어딘가에 골드 태그가 숨어 있어요</div>' +
-      '<div style="font-size:13px;line-height:1.6">앱 속 김포점 지도를 걸어 다니며 매대를 뒤져 보세요. 찾으면 500P! 실제 매장 같은 자리의 골드 태그 상품은 그 자리에서 초특가예요.</div></section>' +
-      '<button class="hentry" data-a="hunt"><div class="hstore"><div class="sign">GOOD-BUY</div><div class="wall"><div class="glass"></div></div><i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i></div>' +
+      '<div style="font-size:13px;line-height:1.6">앱 속 김포점을 내 캐릭터로 걸어 다니며 매대를 뒤져 보세요. 찾으면 500P! 실제 매장 같은 자리의 골드 태그 상품은 그 자리에서 초특가예요.</div></section>' +
+      '<button class="hentry" data-a="hunt"><div class="hstore"><img src="img/hunt/store-s.webp" alt=""><img class="hwho" src="img/hunt/' + (S.avatar === 'm' ? 'm' : 'f') + '-back-1.webp" alt=""><i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i></div>' +
       '<div class="htxt"><b>매장 안으로 들어가기</b><span>' + msg + '</span></div></button>' +
-      '<section class="card" style="gap:6px"><div class="h2">이렇게 찾아요</div><div style="font-size:13px;line-height:1.8">1. 아래쪽 코너 이름을 누르면 그 자리로 걸어가요<br>2. 지도를 손가락으로 끌어 매장을 둘러봐요<br>3. 가까이 가면 반짝이는 <b>?</b> 자리가 보여요. 눌러서 뒤져 보세요<br>4. 꽝이면 뜨거운지 차가운지 힌트를 드려요</div></section>';
+      '<section class="card" style="gap:6px"><div class="h2">이렇게 찾아요</div><div style="font-size:13px;line-height:1.8">1. 입구에서 여자·남자 캐릭터를 골라요<br>2. 지도를 손가락으로 끌어 매장을 둘러봐요<br>3. 코너 이름이나 바닥을 누르면 타닥타닥 걸어가요<br>4. 코너에 도착하면 매대 앞에서 반짝이는 <b>?</b> 를 눌러 뒤져 보세요<br>5. 꽝이면 뜨거운지 차가운지 힌트를 드려요</div></section>';
   }
 
   function memberView() {
@@ -554,13 +554,14 @@
     var h;
     if (render.unhunt) { render.unhunt(); render.unhunt = null; }
     if (V.screen === 'hunt' && !V.detail) {
-      app.innerHTML = GBHunt.html(treasure()); render.lastKey = 'hunt';
+      app.innerHTML = GBHunt.html(treasure(), S.avatar || 'f', S.sound !== false); render.lastKey = 'hunt';
       render.unhunt = GBHunt.mount({
-        st: treasure(), save: save,
+        st: treasure(), save: save, avatar: S.avatar || 'f', sound: S.sound !== false,
+        setAvatar: function (a) { S.avatar = a; save(); }, setSound: function (on) { S.sound = on; save(); },
         onFind: function () { S.points += 500; S.history.unshift({ label: '보물찾기 골드 태그 발견', date: md(today0()), pts: 500 }); save(); }
       }, {
         pos: V.huntPos, skipGate: V.huntIn,
-        savePos: function (p) { V.huntPos = { x: p.x, y: p.y }; },
+        savePos: function (p) { V.huntPos = p; },
         entered: function () { V.huntIn = true; }
       });
       return;
