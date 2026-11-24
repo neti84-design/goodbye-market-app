@@ -383,6 +383,17 @@
       if (meMat) meMat.map = frames.back1;
     }
 
+    var focus, cutout, bufferSize;
+    function protectView(material) {
+      material.onBeforeCompile = function(shader) {
+        shader.uniforms.huntFocus = {value:cutout};
+        shader.vertexShader = 'varying float huntDepth;\n' + shader.vertexShader.replace('#include <project_vertex>',
+          '#include <project_vertex>\n huntDepth = -mvPosition.z;');
+        shader.fragmentShader = 'varying float huntDepth; uniform vec4 huntFocus;\n' + shader.fragmentShader.replace('#include <clipping_planes_fragment>',
+          '#include <clipping_planes_fragment>\n if(huntDepth < huntFocus.z && length((gl_FragCoord.xy - huntFocus.xy) * vec2(1.45,1.0)) < huntFocus.w) discard;');
+      };
+    }
+
     function init(err) {
       if (!alive) return;
       if (err || !window.THREE) { $('hload').textContent = '3D 매장을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'; return; }
@@ -392,7 +403,16 @@
       renderer.outputEncoding = T.sRGBEncoding;
       scene = new T.Scene();
       cam = new T.PerspectiveCamera(62, 1, 0.1, 60);
+      T.ColorManagement.legacyMode = false;
+      renderer.toneMapping = T.ReinhardToneMapping;
+      renderer.toneMappingExposure = 0.98;
+      focus = new T.Vector3(); cutout = new T.Vector4(); bufferSize = new T.Vector2();
       build(T, scene);
+      scene.traverse(function(obj) {
+        if (obj.isMesh && obj.name !== 'walkable-floor') {
+          [].concat(obj.material).forEach(protectView);
+        }
+      });
       loadFrames();
       meMat = new T.SpriteMaterial({ map: frames.back1, transparent: true, alphaTest: 0.05, depthTest: true, depthWrite: false }); // 매대 뒤에서도 내 캐릭터가 보이게
       me = new T.Sprite(meMat); me.scale.set(1.33, 1.33, 1); me.center.set(0.5, 0.03); me.renderOrder = 10; scene.add(me);
@@ -491,8 +511,17 @@
       }
       cameraDistance = Math.min(desiredDistance, cameraDistance + (desiredDistance - cameraDistance) * (1 - Math.exp(-dt * 5)));
       var tight = 1 - cameraDistance / 3.1, lead = 1.12 * (1 - tight);
-      cam.position.set(W(pos.x) - sx * cameraDistance, 1.70 + tight * 1.28, Wz(pos.z) + cz * cameraDistance);
+      var framingDistance = Math.max(1.25, cameraDistance);
+      cam.position.set(W(pos.x) - sx * framingDistance, 1.70 + tight * 1.85, Wz(pos.z) + cz * framingDistance);
       cam.lookAt(W(pos.x) + sx * lead, 0.90, Wz(pos.z) - cz * lead);
+      cam.updateMatrixWorld();
+      focus.copy(me.position).applyMatrix4(cam.matrixWorldInverse);
+      var depth = -focus.z;
+      focus.y += (0.5 - me.center.y) * me.scale.y;
+      focus.applyMatrix4(cam.projectionMatrix);
+      renderer.getDrawingBufferSize(bufferSize);
+      cutout.set((focus.x + 1) * bufferSize.x / 2, (focus.y + 1) * bufferSize.y / 2,
+        depth + 0.02, bufferSize.y * cam.projectionMatrix.elements[5] * me.scale.y * 0.77 / (2 * depth));
       renderer.render(scene, cam);
       if (moving !== tick.wasMoving) { tick.wasMoving = moving; if (!moving) opts.savePos({ x: pos.x, z: pos.z, yaw: yaw }); }
       minimap(); updNear(moving);
