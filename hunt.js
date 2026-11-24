@@ -648,7 +648,7 @@
       arrowShape.lineTo(-0.16,-0.025);arrowShape.closePath();
       var arrowGeometry=new T.ShapeGeometry(arrowShape);
       var arrowMaterial=new T.MeshBasicMaterial({color:0x007b75,side:T.DoubleSide});
-      for(var j=0;j<4;j++){
+      for(var j=0;j<3;j++){
         var arrow=new T.Mesh(arrowGeometry,arrowMaterial);
         arrow.rotation.order='YXZ';arrow.rotation.x=-Math.PI/2;scene.add(arrow);arrows.push(arrow);
       }
@@ -666,7 +666,7 @@
       arrows.forEach(function(arrow,i){
         arrow.visible=false;
         if(sceneZ>=0)return;
-        var angle=yaw*Math.PI/180+i*Math.PI/2,dx=Math.sin(angle),dz=-Math.cos(angle);
+        var angle=yaw*Math.PI/180+(i-1)*Math.PI/2,dx=Math.sin(angle),dz=-Math.cos(angle);
         for(var step=1;step<=12;step++){
           if(!freeAt(pos.x+dx*step*0.075/U,pos.z+dz*step*0.075/U))return;
         }
