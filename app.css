@@ -517,3 +517,7 @@ button.logo { padding: 0; text-align: left; }
 .map-list { margin:0; padding:0; list-style:none; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:2px 8px; }
 .map-list li button { width:100%; min-height:44px; display:flex; align-items:center; gap:8px; text-align:left; padding:4px; background:#fff; color:#28231e; border:0; border-bottom:1px solid #efe9e3; font-size:14px; }
 .map-list b { display:grid; place-items:center; width:24px; height:24px; flex:none; border-radius:50%; background:#854019; color:white; }
+
+.hscene3.show { background:transparent; animation:none; }
+.hscene3 .tag-hit {position:absolute;transform:translate(-50%,-50%);min-width:44px;min-height:44px;border:0;background:transparent;padding:0;}
+.tag-hit:focus-visible {outline:2px solid #ffb12f;border-radius:8px;}

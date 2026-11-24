@@ -29,11 +29,24 @@
     { id: 'chk', name: '계산대', ax: 833, az: 610, face: -90, keep: 1, ar: 1 }
   ];
   var ZI = {}; ZONES.forEach(function (z, i) { ZI[z.id] = i; });
-  // 사진에서 매대 부분만 (위 간판·아래 바닥 잘라냄): [위, 아래] 비율, 사진 가로/세로
-  var CROP = { mea: [0.08, 1, 0.749], sea: [0.08, 1, 0.749], chk: [0.25, 0.85, 1], frs: [0.18, 0.95, 1], big: [0.1, 0.9, 1] };
-  function crop(id) { return CROP[id] || [0.14, 0.93, 1]; }
-  var SPOT_SETS = [[[28, 34], [70, 48], [34, 63]], [[66, 28], [30, 48], [72, 64]], [[48, 40], [24, 62], [76, 30]]];
-  function spotsOf(zi) { return SPOT_SETS[zi % 3]; }
+  // Each anchor is on the aisle-facing edge of the actual 3D fixture.
+  var shelves = {
+    frz:[790,183,0,0.85,'뒤쪽 벽을 따라 길게 이어진 냉동 선반을 보세요.'],
+    dai:[239,250,-90,0.8,'왼쪽 벽에 하얀 원통형 유제품이 줄지어 있어요.'],
+    chl:[239,400,-90,0.8,'왼쪽 냉장 진열대의 네모난 포장을 찾아보세요.'],
+    sea:[392,400,-90,0.85,'붉은 장통과 뚜껑 달린 병이 나란히 있어요.'],
+    mea:[523,400,-90,0.85,'둥근 즉석밥 용기 옆에 알록달록한 포장이 있어요.'],
+    liv:[631,459,0,0.85,'생활용품 선반에 뚜껑 달린 세제 병이 늘어서 있어요.'],
+    tis:[763,459,0,0.85,'가운데 구멍이 보이는 하얀 두루마리를 찾아보세요.'],
+    per:[882,459,0,0.85,'퍼스널케어 선반에 색이 다른 병들이 서 있어요.'],
+    kit:[1006,459,0,0.85,'손잡이가 달린 작은 팬이 놓인 선반을 보세요.'],
+    hlt:[1122,459,0,0.85,'건강식품 간판 아래 작은 병들이 모여 있어요.'],
+    toy:[1236,459,0,0.85,'알록달록한 상자 위에 동그란 장난감이 보여요.'],
+    big:[1300,435,90,0.85,'둥근 문이 달린 세탁기가 있는 줄을 찾아보세요.'],
+    sml:[1321,590,90,0.85,'나무 테이블에 둥근 소형가전이 놓여 있어요.'],
+    frs:[461,590,-90,0.86,'초록 채소와 붉은 과일이 담긴 나무 상자를 보세요.'],
+    chk:[748,610,-90,0.95,'입구 안쪽에 검은 벨트와 작은 화면이 보여요.']
+  };
   function seedOf(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100003; return h; }
 
   // 매장 배치 (배치도 px): 막힌 곳 + 3D 물건
@@ -418,6 +431,7 @@
       renderer.toneMappingExposure = 0.98;
       focus = new T.Vector3(); cutout = new T.Vector4(); bufferSize = new T.Vector2();
       build(T, scene);
+      makeHuntObjects();
       scene.traverse(function(obj) {
         if (obj.isMesh && obj.name !== 'walkable-floor') {
           [].concat(obj.material).forEach(protectView);
@@ -532,6 +546,8 @@
       renderer.getDrawingBufferSize(bufferSize);
       cutout.set((focus.x + 1) * bufferSize.x / 2, (focus.y + 1) * bufferSize.y / 2,
         depth + 0.02, bufferSize.y * cam.projectionMatrix.elements[5] * me.scale.y * 0.77 / (2 * depth));
+      updateHuntView(joy && joy.mode === 'walk' && want > 0, travel);
+      if(sceneZ>=0)cutout.w=0;
       renderer.render(scene, cam);
       if (moving !== tick.wasMoving) { tick.wasMoving = moving; if (!moving) opts.savePos({ x: pos.x, z: pos.z, yaw: yaw }); }
       minimap(); updNear(moving);
@@ -582,6 +598,8 @@
         var ray = new T.Raycaster();
         ray.setFromCamera(new T.Vector2((e.clientX - rect.left) / rect.width * 2 - 1,
           1 - (e.clientY - rect.top) / rect.height * 2), cam);
+        var picked = ray.intersectObjects(tags.filter(function(tag){return tag.visible}),false)[0];
+        if(picked){var info=picked.object.userData;openScene(info.zone);search(info.slot,scn.querySelector('[data-k="'+info.slot+'"]'));return;}
         var hit = ray.intersectObjects(scene.children, false).find(function(h) {
           return h.object.isMesh && h.object !== shadow;
         });
@@ -596,25 +614,81 @@
     view.addEventListener('lostpointercapture', endJoy);
     look.addEventListener('click', function () { if (nearZ >= 0) { var zi = nearZ; route = []; faceTo = ZONES[zi].keep ? null : ZONES[zi].face; arrive = function () { openScene(zi); }; } });
 
-    /* 매대 앞 장면 */
+    var tags = [], prints = [], target, lens;
+    function makeHuntObjects() {
+      target = new T.Vector3(); lens = new T.Vector3();
+      var tagShape = new T.Shape();
+      tagShape.moveTo(-0.086,-0.055); tagShape.lineTo(0.045,-0.055); tagShape.lineTo(0.088,0);
+      tagShape.lineTo(0.045,0.055); tagShape.lineTo(-0.086,0.055); tagShape.closePath();
+      var geometry = new T.ExtrudeGeometry(tagShape,{depth:0.012,bevelEnabled:false});
+      var foil = new T.MeshStandardMaterial({color:0xeab64f,emissive:0x573407,roughness:0.32,side:T.DoubleSide});
+      var kraft = new T.MeshStandardMaterial({color:0xd4ae77,roughness:0.75,side:T.DoubleSide});
+      ZONES.forEach(function(z,i){
+        var f=shelves[z.id], angle=f[2]*Math.PI/180;
+        for(var k=0;k<3;k++){
+          var tag = new T.Mesh(geometry,(i===goldZ && k===goldK)?foil:kraft);
+          var offset=(k-1)*0.29;
+          tag.position.set(W(f[0])+Math.cos(angle)*offset-Math.sin(angle)*0.035,
+            f[3]+[0.04,0.25,-0.09][k], Wz(f[1])+Math.sin(angle)*offset+Math.cos(angle)*0.035);
+          tag.rotation.set(0,-angle,(k-1)*0.14);
+          tag.userData={zone:i,slot:k};
+          scene.add(tag); tags.push(tag);
+        }
+      });
+      var sole=new T.Shape();
+      sole.absellipse(0,0,0.063,0.13,0,Math.PI*2,false,0);
+      var soleGeo=new T.ShapeGeometry(sole);
+      for(var j=0;j<3;j++){
+        var mark=new T.Mesh(soleGeo,new T.MeshBasicMaterial({color:0xed721d,transparent:true,opacity:0.82-j*0.17,depthWrite:false}));
+        mark.rotation.order='YXZ';mark.rotation.x=-Math.PI/2;mark.visible=false;scene.add(mark);prints.push(mark);
+      }
+      document.querySelector('.hguide span').textContent='오늘의 단서 · '+shelves[ZONES[goldZ].id][4];
+    }
+    function updateHuntView(walking,heading){
+      var a=heading*Math.PI/180;
+      prints.forEach(function(mark,i){
+        mark.visible=false;
+        if(!walking || sceneZ>=0)return;
+        var stride=0.40+i*0.23, offset=i%2?0.09:-0.09;
+        var x=pos.x+(Math.sin(a)*stride+Math.cos(a)*offset)/U;
+        var z=pos.z+(-Math.cos(a)*stride+Math.sin(a)*offset)/U;
+        if(!freeAt(x,z))return;
+        mark.visible=true;mark.position.set(W(x),0.018,Wz(z));mark.rotation.y=-a;
+      });
+      if(sceneZ>=0){
+        var f=shelves[ZONES[sceneZ].id],theta=f[2]*Math.PI/180;
+        target.set(W(f[0]),f[3]+0.08,Wz(f[1]));
+        var distance=Math.max(1.05,0.59/(Math.tan(cam.fov*Math.PI/360)*cam.aspect));
+        lens.copy(target);lens.x-=Math.sin(theta)*distance;lens.y+=0.25;lens.z+=Math.cos(theta)*distance;
+        cam.position.copy(lens);cam.lookAt(target);cam.updateMatrixWorld();
+      }
+      me.visible=shadow.visible=sceneZ<0;
+      tags.forEach(function(tag){
+        var i=tag.userData.zone,k=tag.userData.slot,z=ZONES[i];
+        tag.visible=!st.found && !st.opened[z.id+':'+k] && (sceneZ===i || (sceneZ<0 && Math.hypot(pos.x-z.ax,pos.z-z.az)<115));
+        if(sceneZ===i){
+          var button=scn.querySelector('[data-k="'+k+'"]');
+          if(!button)return;
+          target.copy(tag.position).project(cam);
+          button.hidden=!tag.visible;
+          button.style.left=(50+target.x*50)+'%';button.style.top=(50-target.y*50)+'%';
+        }
+      });
+    }
     function openScene(zi) {
-      var z = ZONES[zi]; sceneZ = zi;
-      var vw = view.clientWidth, vh = view.clientHeight, H = vh * 1.02, Wd = H * z.ar;
-      if (Wd < vw) { Wd = vw; H = Wd / z.ar; }
-      var spots = spotsOf(zi).map(function (p, k) {
-        var o = st.opened[z.id + ':' + k], hit = o && zi === goldZ && k === goldK;
-        return '<button class="ss' + (hit ? ' gold' : o ? ' miss' : '') + '" data-k="' + k + '" style="left:' + p[0] + '%;top:' + p[1] + '%" aria-label="' + z.name + ' ' + (k + 1) + '번 자리 살펴보기"><b>' + (hit ? '★' : o ? '꽝' : '?') + '</b></button>';
-      }).join('');
-      scn.innerHTML = '<div class="vbox" style="width:' + Wd + 'px;height:' + H + 'px;margin-left:' + (-Wd / 2) + 'px;margin-top:' + (-H / 2) + 'px"><img src="img/hunt/z-' + z.id + '.webp" alt="' + z.name + ' 매대" draggable="false"><div class="spots show">' + spots + '</div></div>' +
-        '<div class="sctop"><b>' + z.name + '</b><span>' + (st.found ? '오늘 골드 태그는 이미 찾았어요' : st.tries > 0 ? '반짝이는 ? 를 눌러 뒤져 보세요' : '오늘 기회를 다 썼어요') + '</span></div>' +
-        '<img class="sme" src="' + sprite(av, 'back', 1) + '" alt="">' +
-        '<button class="sback" data-sb="1">← 통로로 돌아가기</button>';
-      scn.classList.add('show'); where.textContent = z.name + ' 코너';
+      if(busy)return;
+      endJoy();route=[];speed=0;sceneZ=zi;
+      var z=ZONES[zi];
+      scn.innerHTML='<div class="sctop"><b>'+z.name+'</b><span>상품 사이에 삐져나온 가격표를 눌러 보세요</span></div>'+
+        [0,1,2].map(function(k){return '<button class="tag-hit" data-k="'+k+'" aria-label="'+z.name+' '+(k+1)+'번 가격표 살펴보기"></button>';}).join('')+
+        '<button class="sback" data-sb="1">통로로 돌아가기</button>';
+      scn.classList.add('show');where.textContent=z.name+' 코너';
     }
     function closeScene() { if (sceneZ < 0) return; scn.classList.remove('show'); sceneZ = -1; nearZ = -2; }
     scn.addEventListener('click', function (e) {
+      if (busy) return;
       if (e.target.closest('[data-sb]')) { closeScene(); return; }
-      var b = e.target.closest('.ss'); if (b) search(+b.getAttribute('data-k'), b);
+      var b = e.target.closest('[data-k]'); if (b) search(+b.getAttribute('data-k'), b);
     });
     function sceneMsg(t) { var s = scn.querySelector('.sctop span'); if (s) s.textContent = t; }
     function search(k, el) {
@@ -625,12 +699,13 @@
       busy = true; el.classList.add('shake'); scn.classList.add('dig'); sceneMsg('뒤적뒤적…');
       if (soundOn) { audio(); footstep(true); setTimeout(function () { footstep(false); }, 300); setTimeout(function () { footstep(true); }, 600); }
       setTimeout(function () {
+        if (!alive) return;
         busy = false; el.classList.remove('shake'); scn.classList.remove('dig');
         st.opened[key] = true; st.tries -= 1;
         var hit = zi === goldZ && k === goldK;
         if (hit) { st.found = true; ctx.onFind(); } else ctx.save();
         if (soundOn) chime(hit);
-        el.className = 'ss' + (hit ? ' gold' : ' miss'); el.firstChild.textContent = hit ? '★' : '꽝';
+        el.hidden = true;
         sceneMsg(hit ? '골드 태그를 찾았어요!' : '여긴 없었어요');
         dots(); reveal(hit, zi, k);
       }, 1000);
@@ -651,9 +726,10 @@
           '<button class="btn" data-h="close">좋아요</button></div>';
       } else {
         var hi = hint(zi);
+        hi[1] += ' ' + shelves[ZONES[goldZ].id][4];
         h = '<div class="mcard2 lose"><div class="stamp">꽝</div><b class="big">' + z.name + ' ' + (k + 1) + '번 자리엔 없었어요</b>' +
           (st.tries > 0 ? '<div class="hint ' + hi[0] + '">' + hi[1] + '</div><p>남은 기회 <b>' + st.tries + '번</b></p><button class="btn" data-h="close">다시 찾기</button>'
-            : bonusButton()) + '</div>';
+            : '<p>'+hi[1]+'</p>'+bonusButton()) + '</div>';
       }
       modal.innerHTML = h; modal.classList.add('show');
     }
@@ -701,7 +777,7 @@
       setTimeout(function () { gate.classList.add('gone'); }, 900);
       setTimeout(function () {
         gate.style.display = 'none';
-        say(st.found ? '오늘 골드 태그는 이미 찾았어요! 매장은 자유롭게 둘러보세요' : st.tries <= 0 ? '동기찬스로 기회 3회를 더 받아요' : '캐릭터 머리를 누른 채 가고 싶은 쪽으로 밀어 보세요');
+        say(st.found ? '오늘 골드 태그는 이미 찾았어요! 매장은 자유롭게 둘러보세요' : st.tries <= 0 ? '동기찬스로 기회 3회를 더 받아요' : '첫 단서 · ' + shelves[ZONES[goldZ].id][4]);
         if (!st.found && st.tries === 0) offerBonus();
         if (!opts.pos || opts.pos.z == null) goTo(835, 700);
       }, 1300);

@@ -394,7 +394,7 @@
       (t.tries === 0 && !t.found ? '<button class="btn" data-a="huntBonus">' + GBHunt.BONUS_LABEL + '</button>' : '') +
       '<button class="hentry" data-a="hunt"><div class="hstore"><img src="img/hunt/store-s.webp" alt=""><img class="hwho" src="img/hunt/' + (S.avatar === 'm' ? 'm' : 'f') + '-back-1.webp" alt=""><i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i></div>' +
       '<div class="htxt"><b>매장 안으로 들어가기</b><span>' + msg + '</span></div></button>' +
-      '<section class="card" style="gap:6px"><div class="h2">이렇게 찾아요</div><div style="font-size:13px;line-height:1.8">1. 입구에서 여자·남자 캐릭터를 골라요<br>2. 캐릭터 머리를 누르고 가고 싶은 쪽으로 밀어요<br>3. 코너 이름이나 바닥을 누르면 타닥타닥 걸어가요<br>4. 코너에 도착하면 매대 앞에서 반짝이는 <b>?</b> 를 눌러 뒤져 보세요<br>5. 꽝이면 뜨거운지 차가운지 힌트를 드려요</div></section>';
+      '<section class="card" style="gap:6px"><div class="h2">이렇게 찾아요</div><div style="font-size:13px;line-height:1.8">1. 입구에서 여자·남자 캐릭터를 골라요<br>2. 캐릭터 머리를 누르고 가고 싶은 쪽으로 밀어요<br>3. 코너 이름이나 바닥을 누르면 타닥타닥 걸어가요<br>4. 코너에 도착하면 상품 사이에 삐져나온 <b>가격표</b>를 눌러 보세요<br>5. 꽝이면 거리와 상품 모양을 단서로 드려요</div></section>';
   }
 
   function memberView() {
