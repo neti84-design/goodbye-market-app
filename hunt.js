@@ -156,7 +156,17 @@
   function html(st, av, sound) {
     var dots = ''; for (var i = 0; i < TRIES; i++) dots += '<i class="' + (i < st.tries ? 'on' : '') + '"></i>';
     var chips = ZONES.map(function (z, i) { return '<button class="hz" data-z="' + i + '">' + z.name + '</button>'; }).join('');
-    var pins = ZONES.map(function (z, i) { return '<button class="mp" data-z="' + i + '" style="left:' + (z.ax / IW * 100) + '%;top:' + (z.az / IH * 100) + '%">' + z.name + '</button>'; }).join('');
+    // Pin centers mark the fixtures in the overview photo. Walking targets stay in the aisles.
+    var mapLocations = {frz:[46,15],dai:[10,29],chl:[10,44],sea:[22,34],mea:[30,34],
+      liv:[38,43],tis:[46,43],per:[54,43],kit:[62,43],hlt:[70,43],toy:[78,43],
+      big:[89,32],sml:[89,66],frs:[18,64],chk:[49,68]};
+    var pins = ZONES.map(function(z,i) {
+      var p = mapLocations[z.id], number = i+1;
+      return '<button class="mp" data-z="'+i+'" aria-label="'+number+'번 '+z.name+'" style="left:'+p[0]+'%;top:'+p[1]+'%">'+number+'</button>';
+    }).join('');
+    var legend = ZONES.map(function(z,i) {
+      return '<li><button data-z="'+i+'"><b>'+(i+1)+'</b> '+z.name+'</button></li>';
+    }).join('');
     var pick = ['f', 'm'].map(function (g) {
       return '<button class="gpick' + (av === g ? ' on' : '') + '" data-g="' + g + '"><img src="' + sprite(g, 'back', 1) + '" alt=""><span>' + (g === 'f' ? '여자' : '남자') + '</span></button>';
     }).join('');
@@ -172,7 +182,7 @@
       '<button class="hmini" id="hmini" aria-label="매장 지도 보고 목적지 고르기"><img src="img/hunt/store-s.webp" alt=""><i id="hdot"></i><span>지도</span></button>' +
       '<div class="hmsg" id="hmsg"></div>' +
       '<div class="hscene3" id="hscene"></div>' +
-      '<div class="hmapov" id="hmapov"><div class="mpbox"><div class="mphd"><b>어디로 걸어갈까요?</b><button data-mx="1">닫기</button></div><div class="mpimg"><img src="img/hunt/store.webp" alt="매장 전체">' + pins + '<i class="mpme" id="mpme"></i></div><p>코너를 누르면 지금 자리에서 통로를 따라 걸어가요</p></div></div>' +
+      '<div class="hmapov" id="hmapov"><div class="mpbox"><div class="mphd"><b>어디로 걸어갈까요?</b><button data-mx="1">닫기</button></div><div class="mpimg"><img src="img/hunt/store.webp" alt="매장 전체">' + pins + '<i class="mpme" id="mpme"></i></div><p>번호나 매대 이름을 누르면 그곳으로 걸어가요</p><ol class="map-list" aria-label="번호별 매대">' + legend + '</ol></div></div>' +
       '</div>' +
       '<div class="hbot"><div class="hguide">어디로 갈까요? <span>머리를 누르고 밀어서 걷기 · 손을 떼면 멈춰요</span></div><div class="hzs">' + chips + '</div></div>' +
       '<div class="hmodal" id="hmodal"></div>' +
@@ -668,7 +678,7 @@
     view.addEventListener('click', function (e) {
       if (e.target.closest('#hmini')) { mapov.classList.add('show'); return; }
       if (e.target.closest('[data-mx]') || e.target === mapov) { mapov.classList.remove('show'); return; }
-      var mp = e.target.closest('.mp'); if (mp) { if (soundOn) audio(); walkZone(+mp.getAttribute('data-z')); }
+      var mp = e.target.closest('#hmapov [data-z]'); if (mp) { if (soundOn) audio(); walkZone(+mp.getAttribute('data-z')); }
     });
     document.querySelector('.hzs').addEventListener('click', function (e) {
       var z = e.target.closest('.hz'); if (!z || !renderer) return;
