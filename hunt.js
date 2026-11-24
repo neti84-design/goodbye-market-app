@@ -152,7 +152,7 @@
     var chips = ZONES.map(function (z, i) { return '<button class="hz" data-z="' + i + '">' + z.name + '</button>'; }).join('');
     var pins = ZONES.map(function (z, i) { return '<button class="mp" data-z="' + i + '" style="left:' + (z.ax / IW * 100) + '%;top:' + (z.az / IH * 100) + '%">' + z.name + '</button>'; }).join('');
     var pick = ['f', 'm'].map(function (g) {
-      return '<button class="gpick' + (av === g ? ' on' : '') + '" data-g="' + g + '"><img src="' + sprite(g, 'right', 1) + '" alt=""><span>' + (g === 'f' ? '여자' : '남자') + '</span></button>';
+      return '<button class="gpick' + (av === g ? ' on' : '') + '" data-g="' + g + '"><img src="' + sprite(g, 'back', 1) + '" alt=""><span>' + (g === 'f' ? '여자' : '남자') + '</span></button>';
     }).join('');
     return '<div class="hunt">' +
       '<div class="htop"><button class="hback" data-a="huntExit" aria-label="보물찾기로 돌아가기"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>' +
@@ -233,7 +233,7 @@
       batches[key].matrices.push(transform.matrix.clone());
     }
     var ivory=0xece2cd, steel=0x59615d, wood=0xa77545;
-    var colors=[0xaf4033,0xde9843,0x598279,0xe8c275,0x718aa3,0xc97a72];
+    var colors=[0xcc3127,0xffab21,0x189d82,0xffcc48,0x367ac5,0xd55579];
     function product(id,x,y,z,n) {
       var c=colors[n % colors.length], w=0.24,h=0.30;
       if (id==='sea'||id==='per'||id==='liv'||id==='hlt') {
@@ -258,11 +258,13 @@
     function board(x,y,z,w,h,d,c){item('cube',c,x,y,z,w,h,d)}
     GX.forEach(function(gx,i){
       var x=(gx[0]+gx[1])/2;
-      board(x,0.79,345,0.07,1.58,4.06,steel);
+      var accent = colors[i % colors.length];
+      board(x,0.79,345,0.07,1.58,4.06,0xa77a51);
       for(var l=0;l<4;l++){
         var y=0.12+l*0.41;
         board(x,y,345,0.93,0.055,4.08,ivory);
         for(var side of [-1,1]){
+          board(x+side*25,y,345,0.025,0.04,4.08,accent);
           for(var j=0;j<13;j++)product(GON[i],x+side*14,y+0.028,242+j*17,l*13+j);
         }
       }
@@ -342,10 +344,10 @@
       sg.rotation.y = -a; scene.add(sg);
     });
     // 조명
-    scene.add(new T.HemisphereLight(0xffffff, 0xd8cbb8, 0.9));
-    var sun = new T.DirectionalLight(0xffffff, 0.55); sun.position.set(3, 10, 6); scene.add(sun);
+    scene.add(new T.HemisphereLight(0xfff3dc, 0xb89e76, 0.85));
+    var sun = new T.DirectionalLight(0xfff2dc, 0.78); sun.position.set(3, 10, 6); scene.add(sun);
     scene.add(new T.AmbientLight(0xffffff, 0.25));
-    scene.fog = new T.Fog(0xe9e4dc, 14, 34);
+    scene.fog = new T.Fog(0xf4e8d6, 23, 43);
     scene.background = new T.Color(0xe9e4dc);
   }
 
@@ -360,7 +362,7 @@
     var pos = { x: P.x, z: P.z }, yaw = P.yaw || 0, speed = 0;
     if(!freeAt(pos.x,pos.z)){var safe=nearestFree(Math.floor(pos.x/CELL),Math.floor(pos.z/CELL));pos=safe?{x:(safe[0]+0.5)*CELL,z:(safe[1]+0.5)*CELL}:{x:START.x,z:START.z};}
     var route = [], arrive = null, faceTo = null, busy = false, joy = null, nearZ = -1, sceneZ = -1;
-    var T, renderer, scene, cam, me, meMat, shadow, frames = {}, frame = 1, stepAcc = 0, stepLeft = false, phase = 0, camYaw = yaw, orbitYaw = yaw, camPos = null, raf = 0, last = 0;
+    var T, renderer, scene, cam, me, meMat, shadow, frames = {}, frame = 1, stepAcc = 0, stepLeft = false, phase = 0, cameraDistance = 3.1, raf = 0, last = 0;
 
     function say(t) { msgEl.textContent = t; msgEl.classList.toggle('show', !!t); }
     function dots() { var d = document.querySelectorAll('.hdots i'); for (var i = 0; i < d.length; i++) d[i].className = i < st.tries ? 'on' : ''; }
@@ -371,7 +373,7 @@
     }
     function loadFrames() {
       var L = new T.TextureLoader();
-      ['back', 'left', 'right'].forEach(function (d) { [1, 2].forEach(function (n) { var t = L.load(sprite(av, d, n)); t.encoding = T.sRGBEncoding; frames[d + n] = t; }); });
+      var d = 'back'; [1, 2].forEach(function (n) { var t = L.load(sprite(av, d, n)); t.encoding = T.sRGBEncoding; frames[d + n] = t; });
       if (meMat) meMat.map = frames.back1;
     }
 
@@ -434,7 +436,7 @@
       if (!busy && sceneZ < 0) {
         if (joy && joy.mode === 'walk' && Math.hypot(joy.dx, joy.dy) > 5) {
           route = []; arrive = null; faceTo = null;
-          travel = camYaw + Math.atan2(joy.dx, -joy.dy) * 180 / Math.PI;
+          travel = joy.angle + Math.atan2(joy.dx, -joy.dy) * 180 / Math.PI;
           turnRate = angDiff(yaw, travel) * 12;
           want = Math.min(1, Math.hypot(joy.dx, joy.dy) / 52);
         } else if (route.length) {
@@ -467,30 +469,24 @@
         var stepNow = Math.floor(phase / Math.PI);
         if (stepNow !== stepAcc) { stepAcc = stepNow; frame = frame === 1 ? 2 : 1; stepLeft = !stepLeft; if (soundOn) footstep(stepLeft); }
       } else { phase = 0; frame = 1; }
-      var side = Math.sin(angDiff(camYaw, yaw) * Math.PI / 180);
-      var dir = side < -0.48 ? 'left' : side > 0.48 ? 'right' : 'back';
-      if (meMat.map !== frames[dir + frame]) { meMat.map = frames[dir + frame]; meMat.needsUpdate = true; }
+      meMat.map = frames['back' + frame];
       var bob = moving ? Math.abs(Math.sin(phase)) * 0.05 : 0;
       me.position.set(W(pos.x), bob, Wz(pos.z));
       meMat.rotation = moving ? Math.sin(phase) * 0.025 : 0;
       shadow.position.set(W(pos.x), 0.01, Wz(pos.z)); shadow.rotation.z = -yaw * Math.PI / 180;
       // 카메라: 방향은 천천히 따라 돌고, 벽에 막히면 당겨 옴
-      camYaw += angDiff(camYaw, orbitYaw) * (1 - Math.exp(-dt * 12));
-      var ca = camYaw * Math.PI / 180, sx = Math.sin(ca), cz = Math.cos(ca), dist = 3.4;
-      for (var b = 0.3; b <= 3.4; b += 0.1) { var px = pos.x - sx * b / U, pz = pos.z + cz * b / U; if (!clearance(px,pz,8) || px < 25 || px > IW - 25 || pz < 25) { dist = Math.max(0.08, b - 0.18); break; } }
-      // 좁은 곳에선 카메라를 위로 올려 캐릭터가 가려지지 않게
-      var ty = 2.05 + (3.4 - dist) * 0.55 + Math.sin(phase * 2) * (moving ? 0.015 : 0);
-      var tx = W(pos.x) - sx * dist, tz = Wz(pos.z) + cz * dist;
-      if (!camPos) camPos = new T.Vector3(tx, ty, tz);
-      camPos.x += (tx - camPos.x) * Math.min(1, dt * 6); camPos.y += (ty - camPos.y) * Math.min(1, dt * 6); camPos.z += (tz - camPos.z) * Math.min(1, dt * 6);
-      var ox=camPos.x-W(pos.x),oz=camPos.z-Wz(pos.z), span=Math.hypot(ox,oz),steps=Math.ceil(span/0.06);
-      for(var k=1;k<=steps;k++) {
-        if(!clearance(pos.x+ox*k/steps/U,pos.z+oz*k/steps/U,8)){
-          camPos.x=W(pos.x)+ox*(k-1)/steps;camPos.z=Wz(pos.z)+oz*(k-1)/steps;break;
+      var angle = yaw * Math.PI / 180, sx = Math.sin(angle), cz = Math.cos(angle);
+      var desiredDistance = 3.1;
+      for (var offset = 0.08; offset <= 3.2; offset += 0.08) {
+        if (!clearance(pos.x - sx * offset / U, pos.z + cz * offset / U, 8)) {
+          desiredDistance = Math.max(0.04, offset - 0.10);
+          break;
         }
       }
-      cam.position.copy(camPos);
-      cam.lookAt(W(pos.x) + sx * 2.2, 1.05, Wz(pos.z) - cz * 2.2);
+      cameraDistance = Math.min(desiredDistance, cameraDistance + (desiredDistance - cameraDistance) * (1 - Math.exp(-dt * 5)));
+      var tight = 1 - cameraDistance / 3.1, lead = 1.12 * (1 - tight);
+      cam.position.set(W(pos.x) - sx * cameraDistance, 1.70 + tight * 1.28, Wz(pos.z) + cz * cameraDistance);
+      cam.lookAt(W(pos.x) + sx * lead, 0.90, Wz(pos.z) - cz * lead);
       renderer.render(scene, cam);
       if (moving !== tick.wasMoving) { tick.wasMoving = moving; if (!moving) opts.savePos({ x: pos.x, z: pos.z, yaw: yaw }); }
       minimap(); updNear(moving);
@@ -504,7 +500,7 @@
       if (!renderer || joy || !e.isPrimary) return;
       var bounds = view.getBoundingClientRect();
       joy = { x: e.clientX, y: e.clientY, dx: 0, dy: 0, id: e.pointerId, dragged: false,
-        mode: e.clientX < bounds.left + bounds.width / 2 ? 'walk' : 'look', angle: orbitYaw };
+        mode: e.clientX < bounds.left + bounds.width / 2 ? 'walk' : 'look', angle: yaw };
       try { view.setPointerCapture(e.pointerId); } catch (er) {}
       var rc = view.getBoundingClientRect();
       pad.style.left = (e.clientX - rc.left) + 'px'; pad.style.top = (e.clientY - rc.top) + 'px'; pad.classList.toggle('show', joy.mode === 'walk');
@@ -514,7 +510,7 @@
       if (!joy || joy.id !== e.pointerId) return;
       joy.dx = e.clientX - joy.x; joy.dy = e.clientY - joy.y;
       if (Math.hypot(joy.dx, joy.dy) > 7) joy.dragged = true;
-      if (joy.mode === 'look') { orbitYaw = joy.angle - joy.dx * 0.35; return; }
+      if (joy.mode === 'look') { if (joy.dragged) { route = []; arrive = null; faceTo = null; speed = 0; yaw = joy.angle - joy.dx * 0.35; } return; }
       var m = Math.min(1, 46 / Math.max(1, Math.hypot(joy.dx, joy.dy)));
       pad.firstChild.style.transform = 'translate(' + joy.dx * m + 'px,' + joy.dy * m + 'px)';
     });
