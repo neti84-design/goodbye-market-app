@@ -621,15 +621,16 @@
       tagShape.moveTo(-0.086,-0.055); tagShape.lineTo(0.045,-0.055); tagShape.lineTo(0.088,0);
       tagShape.lineTo(0.045,0.055); tagShape.lineTo(-0.086,0.055); tagShape.closePath();
       var geometry = new T.ExtrudeGeometry(tagShape,{depth:0.012,bevelEnabled:false});
-      var foil = new T.MeshStandardMaterial({color:0xeab64f,emissive:0x573407,roughness:0.32,side:T.DoubleSide});
-      var kraft = new T.MeshStandardMaterial({color:0xd4ae77,roughness:0.75,side:T.DoubleSide});
+      var foil = new T.MeshStandardMaterial({color:0xffc32c,emissive:0x754207,roughness:0.32,side:T.DoubleSide});
+      var kraft = new T.MeshStandardMaterial({color:0xfff3ce,roughness:0.75,side:T.DoubleSide});
       ZONES.forEach(function(z,i){
         var f=shelves[z.id], angle=f[2]*Math.PI/180;
         for(var k=0;k<3;k++){
           var tag = new T.Mesh(geometry,(i===goldZ && k===goldK)?foil:kraft);
-          var offset=(k-1)*0.29;
-          tag.position.set(W(f[0])+Math.cos(angle)*offset-Math.sin(angle)*0.035,
-            f[3]+[0.04,0.25,-0.09][k], Wz(f[1])+Math.sin(angle)*offset+Math.cos(angle)*0.035);
+          tag.scale.set(1.55,1.55,1.4);
+          var offset=(k-1)*0.32;
+          tag.position.set(W(f[0])+Math.cos(angle)*offset-Math.sin(angle)*0.13,
+            f[3]+[0.04,0.25,-0.09][k], Wz(f[1])+Math.sin(angle)*offset+Math.cos(angle)*0.13);
           tag.rotation.set(0,-angle,(k-1)*0.14);
           tag.userData={zone:i,slot:k};
           scene.add(tag); tags.push(tag);
@@ -679,8 +680,10 @@
       if(busy)return;
       endJoy();route=[];speed=0;sceneZ=zi;
       var z=ZONES[zi];
-      scn.innerHTML='<div class="sctop"><b>'+z.name+'</b><span>상품 사이에 삐져나온 가격표를 눌러 보세요</span></div>'+
-        [0,1,2].map(function(k){return '<button class="tag-hit" data-k="'+k+'" aria-label="'+z.name+' '+(k+1)+'번 가격표 살펴보기"></button>';}).join('')+
+      var exhausted = [0,1,2].every(function(k){return st.opened[z.id+':'+k]});
+      var message = st.found ? '오늘 골드 태그를 이미 찾았어요.' : exhausted ? '이 매대의 가격표는 모두 확인했어요. 다른 매대를 살펴보세요.' : '상품 앞에 보이는 가격표를 눌러 보세요.';
+      scn.innerHTML='<div class="sctop"><b>'+z.name+'</b><span>'+message+'</span></div>'+
+        [0,1,2].map(function(k){return '<button class="tag-hit'+(zi===goldZ && k===goldK?' foil':'')+'" data-k="'+k+'" aria-label="'+z.name+' '+(k+1)+'번 가격표 살펴보기"><span>가격표</span></button>';}).join('')+
         '<button class="sback" data-sb="1">통로로 돌아가기</button>';
       scn.classList.add('show');where.textContent=z.name+' 코너';
     }
@@ -706,7 +709,7 @@
         if (hit) { st.found = true; ctx.onFind(); } else ctx.save();
         if (soundOn) chime(hit);
         el.hidden = true;
-        sceneMsg(hit ? '골드 태그를 찾았어요!' : '여긴 없었어요');
+        sceneMsg(hit ? '골드 태그를 찾았어요!' : [0,1,2].every(function(n){return st.opened[z.id+':'+n]}) ? '이 매대는 모두 확인했어요. 다른 매대를 살펴보세요.' : '다른 가격표를 살펴보세요.');
         dots(); reveal(hit, zi, k);
       }, 1000);
     }

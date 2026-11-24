@@ -521,3 +521,8 @@ button.logo { padding: 0; text-align: left; }
 .hscene3.show { background:transparent; animation:none; }
 .hscene3 .tag-hit {position:absolute;transform:translate(-50%,-50%);min-width:44px;min-height:44px;border:0;background:transparent;padding:0;}
 .tag-hit:focus-visible {outline:2px solid #ffb12f;border-radius:8px;}
+
+.hscene3 .tag-hit {width:54px;height:48px;z-index:1;cursor:pointer;touch-action:manipulation;filter:drop-shadow(0 2px 2px #35251bb3);}
+.hscene3 .tag-hit[hidden] {display:none;}
+.tag-hit span {display:grid;place-items:center;box-sizing:border-box;height:30px;padding-left:7px;border:2px solid #603c19;border-radius:9px 4px 4px 9px;background:radial-gradient(circle at 6px 50%,#694522 2px,transparent 3px),#fff3cb;color:#422812;font-size:13px;font-weight:800;line-height:1;}
+.tag-hit.foil span {background:radial-gradient(circle at 6px 50%,#694522 2px,transparent 3px),linear-gradient(120deg,#ec9e20,#fff3a5 47%,#efac28);}
