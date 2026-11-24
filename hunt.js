@@ -5,7 +5,7 @@
    - 화면을 누른 채 끌면 직접 조종 (위: 앞으로, 옆: 방향)
    - 매대 앞에 서면 [살펴보기] → 매대 사진의 ? → 골드 태그 또는 꽝 */
 (function () {
-  var THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js';
+  var THREE_URL = 'vendor/three.min.js';
   var IW = 1672, IH = 941, CELL = 20, COLS = Math.ceil(IW / CELL), ROWS = Math.ceil(IH / CELL);
   var U = 0.018;                          // 배치도 1px = 1.8cm
   var TRIES = 5, SPEED = 2.4, TURN = 150; // 걷는 속도(m/초), 도는 속도(도/초)
@@ -49,26 +49,29 @@
   for (var r = 0; r < ROWS; r++) {
     FREE[r] = [];
     for (var c = 0; c < COLS; c++) {
-      var x = c * CELL + CELL / 2, y = r * CELL + CELL / 2, ok = true;
-      for (var i = 0; i < BLOCK.length; i++) { var w = BLOCK[i]; if (x >= w[0] - 8 && x < w[2] + 8 && y >= w[1] - 8 && y < w[3] + 8) { ok = false; break; } }
+      var ok = clearance(c*CELL+CELL/2,r*CELL+CELL/2,19);
       FREE[r][c] = ok;
     }
   }
   function free(c, r) { return r >= 0 && r < ROWS && c >= 0 && c < COLS && FREE[r][c]; }
   function cellOf(x, z) { return [Math.floor(x / CELL), Math.floor(z / CELL)]; }
-  function freeAt(x, z) { var c = cellOf(x, z); return free(c[0], c[1]); }
-  function inBox(x, z) { for (var i = 0; i < BLOCK.length; i++) { var w = BLOCK[i]; if (x >= w[0] && x < w[2] && z >= w[1] && z < w[3]) return true; } return false; }
+  var BODY_RADIUS = 19;
+  function clearance(x,z,radius){
+    if(x<radius||z<radius||x>IW-radius||z>IH-radius)return false;
+    return !BLOCK.some(function(b){
+      var dx=Math.max(b[0]-x,0,x-b[2]), dz=Math.max(b[1]-z,0,z-b[3]);
+      return dx*dx+dz*dz < radius*radius;
+    });
+  }
+  function freeAt(x,z){return clearance(x,z,BODY_RADIUS);}
   function nearestFree(c, r) {
     for (var d = 0; d < 15; d++) for (var dc = -d; dc <= d; dc++) for (var dr = -d; dr <= d; dr++)
       if (Math.max(Math.abs(dc), Math.abs(dr)) === d && free(c + dc, r + dr)) return [c + dc, r + dr];
     return null;
   }
   function clear(a, b) {
-    var d = Math.hypot(b.x - a.x, b.z - a.z), n = Math.ceil(d / 5);
-    for (var i = 0; i <= n; i++) {
-      var x = a.x + (b.x - a.x) * i / n, z = a.z + (b.z - a.z) * i / n;
-      for (var o = 0; o < 4; o++) if (!freeAt(x + (o & 1 ? 6 : -6), z + (o & 2 ? 6 : -6))) return false;
-    }
+    var n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/3));
+    for(var i=0;i<=n;i++) if(!freeAt(a.x+(b.x-a.x)*i/n,a.z+(b.z-a.z)*i/n))return false;
     return true;
   }
   // 길 찾기 → 곧게 편 꺾은선 → 모퉁이를 둥글게 (곡선 점들)
@@ -99,17 +102,7 @@
       poly.push(pts[j]); a = pts[j]; i = j;
     }
     if (poly.length === 1 && pts.length) poly.push(pts[pts.length - 1]);
-    // 모퉁이 둥글게: 각 꺾이는 점 앞뒤 R 지점을 잇는 2차 곡선
-    var out = [], R = 45;
-    for (var m = 1; m < poly.length; m++) {
-      var p0 = poly[m - 1], p1 = poly[m], p2 = poly[m + 1];
-      if (!p2) { out.push(p1); break; }
-      var d1 = Math.hypot(p1.x - p0.x, p1.z - p0.z), d2 = Math.hypot(p2.x - p1.x, p2.z - p1.z), rr = Math.min(R, d1 / 2, d2 / 2);
-      var A = { x: p1.x - (p1.x - p0.x) / d1 * rr, z: p1.z - (p1.z - p0.z) / d1 * rr }, B = { x: p1.x + (p2.x - p1.x) / d2 * rr, z: p1.z + (p2.z - p1.z) / d2 * rr };
-      out.push(A);
-      for (var s2 = 1; s2 < 6; s2++) { var u = s2 / 6; out.push({ x: (1 - u) * (1 - u) * A.x + 2 * u * (1 - u) * p1.x + u * u * B.x, z: (1 - u) * (1 - u) * A.z + 2 * u * (1 - u) * p1.z + u * u * B.z }); }
-      out.push(B);
-    }
+    var out=poly.slice(1);
     return out;
   }
 
@@ -175,7 +168,7 @@
       '<div class="hscene3" id="hscene"></div>' +
       '<div class="hmapov" id="hmapov"><div class="mpbox"><div class="mphd"><b>어디로 걸어갈까요?</b><button data-mx="1">닫기</button></div><div class="mpimg"><img src="img/hunt/store.webp" alt="매장 전체">' + pins + '<i class="mpme" id="mpme"></i></div><p>코너를 누르면 지금 자리에서 통로를 따라 걸어가요</p></div></div>' +
       '</div>' +
-      '<div class="hbot"><div class="hguide">어디로 갈까요? <span>코너 이름을 누르면 길을 따라 걸어가요 · 화면을 누른 채 끌면 직접 걸어요</span></div><div class="hzs">' + chips + '</div></div>' +
+      '<div class="hbot"><div class="hguide">어디로 갈까요? <span>바닥 톡 · 왼쪽 드래그로 걷기 · 오른쪽 드래그로 둘러보기</span></div><div class="hzs">' + chips + '</div></div>' +
       '<div class="hmodal" id="hmodal"></div>' +
       '<div class="hgate" id="hgate"><div class="gtxt"><small>오늘의 보물찾기</small><b>매장 어딘가에<br>골드 태그가 숨어 있어요</b><p>기회는 하루 ' + TRIES + '번. 꽝이 나와도 힌트를 드려요.</p></div>' +
       '<div class="front"><div class="sign">GOOD-BUY</div><div class="wall"><div class="glass"><div class="dr l"></div><div class="dr r"></div></div></div></div>' +
@@ -188,24 +181,6 @@
   function W(x) { return (x - IW / 2) * U; }
   function Wz(z) { return (z - IH / 2) * U; }
   function build(T, scene) {
-    var loader = new T.TextureLoader(), cache = {}, clones = {};
-    function base(id) {
-      if (!cache[id]) {
-        clones[id] = [];
-        cache[id] = loader.load('img/hunt/z-' + id + '.webp', function () { clones[id].forEach(function (c) { c.needsUpdate = true; }); });
-        cache[id].encoding = T.sRGBEncoding;
-      }
-      return cache[id];
-    }
-    function copy(id) { var b = base(id), t = b.clone(); if (b.image) t.needsUpdate = true; else clones[id].push(t); return t; }
-    // 면 크기에 맞춰 사진의 매대 부분을 붙이기 (길면 거울 반복)
-    function photo(id, faceW, faceH, dim) {
-      var c = crop(id), t = copy(id);
-      var band = c[2] / (c[1] - c[0]), rx = (faceW / faceH) / band;
-      t.wrapS = T.MirroredRepeatWrapping; t.wrapT = T.ClampToEdgeWrapping;
-      t.repeat.set(rx, c[1] - c[0]); t.offset.set(rx < 1 ? (1 - rx) / 2 : 0, 1 - c[1]);
-      return new T.MeshStandardMaterial({ map: t, roughness: 0.85, color: dim ? 0xdddddd : 0xffffff });
-    }
     var metal = new T.MeshStandardMaterial({ color: 0x3b3b3e, roughness: 0.5, metalness: 0.3 });
     var white = new T.MeshStandardMaterial({ color: 0xf1ece4, roughness: 0.95 });
     var orange = new T.MeshStandardMaterial({ color: 0xf26a1b, roughness: 0.7 });
@@ -222,7 +197,7 @@
     g.strokeStyle = 'rgba(140,120,95,.35)'; g.lineWidth = 3; g.strokeRect(0, 0, 256, 256); g.beginPath(); g.moveTo(128, 0); g.lineTo(128, 256); g.moveTo(0, 128); g.lineTo(256, 128); g.stroke();
     var ft = new T.CanvasTexture(cv); ft.wrapS = ft.wrapT = T.RepeatWrapping; ft.repeat.set(IW * U / 1.2, IH * U / 1.2); ft.encoding = T.sRGBEncoding; ft.anisotropy = 4;
     var floor = new T.Mesh(new T.PlaneGeometry(IW * U, IH * U + 4), new T.MeshStandardMaterial({ map: ft, roughness: 0.35, metalness: 0.05 }));
-    floor.rotation.x = -Math.PI / 2; floor.position.z = 2; scene.add(floor);
+    floor.name = 'walkable-floor'; floor.rotation.x = -Math.PI / 2; floor.position.z = 2; scene.add(floor);
     // 천장 + 조명 줄
     var CEIL = 4.2;
     var ceil = new T.Mesh(new T.PlaneGeometry(IW * U, IH * U + 4), new T.MeshStandardMaterial({ color: 0xe9e6e0, roughness: 1 }));
@@ -240,28 +215,120 @@
     // 입구 유리문 (밖이 밝게)
     var glass = new T.Mesh(new T.PlaneGeometry(310 * U, 2.6), new T.MeshBasicMaterial({ color: 0xdcecf4 }));
     glass.position.set(W(835), 1.3, Wz(760)); glass.rotation.y = Math.PI; scene.add(glass);
-    // 매대 8줄: 옆면 = 사진, 끝면 = 사진, 위 = 금속
-    var GH = 1.9;
-    GX.forEach(function (gx, i) {
-      var id = GON[i], wlen = (458 - 232) * U, wid = (gx[1] - gx[0]) * U;
-      box(gx[0], 232, gx[1], 458, GH, [photo(id, wlen, GH, true), photo(id, wlen, GH, true), metal, metal, photo(id, wid, GH), photo(id, wid, GH, true)]);
-      box(gx[0] - 2, 230, gx[1] + 2, 460, 0.12, metal, 0);
+    // Reuse geometry and materials across the stocked store. Coordinates below are in map units.
+    var shapes = {
+      cube: new T.BoxGeometry(1,1,1),
+      round: new T.SphereGeometry(0.5,12,9),
+      can: new T.CylinderGeometry(0.5,0.5,1,14),
+      cone: new T.ConeGeometry(0.5,1,12)
+    };
+    var batches = {}, transform = new T.Object3D();
+    function item(shape,color,x,y,z,w,h,d,tilt,spin) {
+      var key=shape+'-'+color;
+      if (!batches[key]) batches[key]={shape:shape,color:color,matrices:[]};
+      transform.position.set(W(x),y,Wz(z));
+      transform.scale.set(w,h,d);
+      transform.rotation.set(0,spin||0,tilt||0);
+      transform.updateMatrix();
+      batches[key].matrices.push(transform.matrix.clone());
+    }
+    var ivory=0xece2cd, steel=0x59615d, wood=0xa77545;
+    var colors=[0xaf4033,0xde9843,0x598279,0xe8c275,0x718aa3,0xc97a72];
+    function product(id,x,y,z,n) {
+      var c=colors[n % colors.length], w=0.24,h=0.30;
+      if (id==='sea'||id==='per'||id==='liv'||id==='hlt') {
+        var jar=id==='sea' && n%3===0;
+        w=jar?0.30:0.18; h=jar?0.17:0.26;
+        var body=jar?'cube':'can';
+        item(body,jar?0xa33824:c,x,y+h/2,z,w,h,w);
+        item(body,ivory,x,y+h*0.5,z,w*1.02,h*0.36,w*1.02);
+        item(body,jar?0x882c1b:steel,x,y+h+0.025,z,w*(jar?1.02:0.58),0.05,w*(jar?1.02:0.58));
+      } else if(id==='tis'||id==='dai'||(id==='mea'&&n%3===0)){
+        item('can',id==='dai'?ivory:0xf6f1dd,x,y+0.10,z,0.23,0.20,0.23);
+        item('can',id==='tis'?0xbca991:c,x,y+0.202,z,id==='tis'?0.06:0.24,0.012,id==='tis'?0.06:0.24);
+      } else if(id==='kit'){
+        item('can',steel,x,y+0.055,z,0.29,0.11,0.29);
+        item('cube',0x534237,x,y+0.11,z+8,0.055,0.045,0.16);
+      } else {
+        item('cube',c,x,y+h/2,z,w,h,0.18,0,(n%3-1)*0.075);
+        item('cube',ivory,x,y+0.11,z,w*1.015,0.075,0.185);
+        if(id==='toy')item('round',0xe3a94c,x,y+0.32,z,0.17,0.15,0.15);
+      }
+    }
+    function board(x,y,z,w,h,d,c){item('cube',c,x,y,z,w,h,d)}
+    GX.forEach(function(gx,i){
+      var x=(gx[0]+gx[1])/2;
+      board(x,0.79,345,0.07,1.58,4.06,steel);
+      for(var l=0;l<4;l++){
+        var y=0.12+l*0.41;
+        board(x,y,345,0.93,0.055,4.08,ivory);
+        for(var side of [-1,1]){
+          for(var j=0;j<13;j++)product(GON[i],x+side*14,y+0.028,242+j*17,l*13+j);
+        }
+      }
     });
-    // 냉동고 벽 (뒤), 유제품·냉장 (왼쪽), 대형가전·소형가전 (오른쪽)
-    var FH = 2.2;
-    box(20, 20, 1295, 185, FH, [metal, metal, metal, metal, photo('frz', 1275 * U, FH), metal]);
-    box(20, 185, 240, 320, 2.1, [photo('dai', 135 * U, 2.1), metal, metal, metal, metal, metal]);
-    box(20, 320, 240, 455, 2.1, [photo('chl', 135 * U, 2.1), metal, metal, metal, metal, metal]);
-    box(1295, 20, IW - 20, 480, 2.3, [metal, photo('big', 460 * U, 2.3), metal, metal, photo('big', 357 * U, 2.3), metal]);
-    box(1315, 480, IW - 20, 700, 1.4, [metal, photo('sml', 220 * U, 1.4), metal, metal, photo('sml', 337 * U, 1.4), metal]);
-    // 신선 매대 (낮은 나무 상자, 위에 채소·과일)
-    var wood = new T.MeshStandardMaterial({ color: 0xa0703f, roughness: 0.9 });
-    var top = copy('frs'); top.repeat.set(1, 0.5); top.offset.set(0, 0.25);
-    box(30, 478, 462, 700, 0.85, [photo('frs', 222 * U, 0.85), wood, new T.MeshStandardMaterial({ map: top, roughness: 0.9 }), wood, photo('frs', 432 * U, 0.85), wood]);
-    // 계산대
-    var dark = new T.MeshStandardMaterial({ color: 0x2f2f2f, roughness: 0.6 });
-    [[558, 748], [918, 1108]].forEach(function (cx) {
-      box(cx[0], 495, cx[1], 672, 0.95, [dark, dark, new T.MeshStandardMaterial({ color: 0x555555, roughness: 0.4 }), dark, photo('chk', (cx[1] - cx[0]) * U, 0.95), dark]);
+    // Back-wall cold cases have recessed shelves, divider posts and packages.
+    board(655,1.05,145,22.9,2.1,0.12,steel);
+    for(var bay=0;bay<15;bay++){
+      var bx=65+bay*84;
+      board(bx-40,1.03,164,0.045,2.06,0.66,steel);
+      for(var l=0;l<4;l++){
+        var y=0.13+l*0.47;
+        board(bx,y,164,1.46,0.05,0.65,ivory);
+        for(var j=0;j<5;j++) product('frz',bx-30+j*15,y+0.025,170,j+bay+l);
+      }
+    }
+    for(var sideBay=0;sideBay<6;sideBay++){
+      var z=210+sideBay*44;
+      board(203,0.98,z,0.08,1.96,0.79,steel);
+      for(var l=0;l<4;l++){
+        var y=0.12+l*0.43;
+        board(221,y,z,0.63,0.045,0.79,ivory);
+        for(var j=0;j<3;j++)product(sideBay<3?'dai':'chl',226,y+0.023,z-13+j*13,sideBay+l+j);
+      }
+    }
+    // Full-size appliances, inset doors and contrasting controls face the aisle.
+    for(var j=0;j<8;j++){
+      var z=55+j*54,washer=j%2===0,h=washer?1.05:1.93;
+      board(1330,h/2,z,1.03,h,0.89,0xd2d6d4);
+      if(washer){item('round',steel,1301,0.46,z,0.065,0.63,0.63);item('round',0x293f49,1299,0.46,z,0.06,0.49,0.49);}
+      board(1301,h-0.19,z+13,0.055,0.15,0.20,steel);
+    }
+    board(1348,0.75,590,1.06,0.10,3.92,wood);
+    for(var j=0;j<8;j++){var z=501+j*25;item('round',j%2?ivory:steel,1340,1.03,z,0.42,0.45,0.38);board(1340,1.26,z,0.17,0.05,0.12,steel);}
+    // Shallow wooden bins with individual fruit, stems and overlapping leafy greens.
+    for(var r=0;r<3;r++)for(var c=0;c<6;c++){
+      var x=69+c*71,z=516+r*73;
+      board(x,0.35,z,1.22,0.68,1.26,wood);
+      for(var side of [-1,1]){
+        board(x+side*33,0.76,z,0.06,0.18,1.25,0xbd905c);
+        board(x,0.76,z+side*34,1.22,0.18,0.06,0xbd905c);
+      }
+      var kind=(r*2+c)%6, palette=[0xa93c30,0xe99123,0x8aac43,0xd9bc69,0x528345,0x386b40];
+      for(var layer=0;layer<2;layer++){
+        var count=4-layer;
+        for(var u=0;u<count;u++)for(var v=0;v<count;v++){
+          var px=x+(u-(count-1)/2)*15,pz=z+(v-(count-1)/2)*15;
+          var py=0.82+layer*0.18, green=kind>=4;
+          item('round',palette[kind],px,py,pz,0.255,green?0.32:0.25,0.25);
+          if(green){for(var a=0;a<3;a++)item('round',a===1?0x77a34e:0x507e41,px+(a-1)*4,py+0.06,pz,0.12,0.29,0.19,(1-a)*0.5);}
+          else if(kind===0||kind===2)item('can',0x654631,px,py+0.14,pz,0.019,0.06,0.019,0.13);
+        }
+      }
+    }
+    [[558,748],[918,1108]].forEach(function(cx){
+      var x=(cx[0]+cx[1])/2;
+      board(x,0.45,584,(cx[1]-cx[0])*U,0.90,3.12,steel);
+      board(x,0.93,584,3.43,0.08,3.16,ivory);
+      board(x,0.99,596,1.24,0.035,1.66,0x343837);
+      board(x,1.22,533,0.10,0.49,0.12,steel);
+      board(x,1.52,533,0.64,0.41,0.07,0x253537);
+    });
+    Object.keys(batches).forEach(function(key){
+      var batch=batches[key], mesh=new T.InstancedMesh(shapes[batch.shape],
+        new T.MeshStandardMaterial({color:batch.color,roughness:0.68}),batch.matrices.length);
+      batch.matrices.forEach(function(matrix,i){mesh.setMatrixAt(i,matrix)});
+      scene.add(mesh);
     });
     // 코너 간판 (주황 판에 이름)
     ZONES.forEach(function (z) {
@@ -291,8 +358,9 @@
     var g = seedOf(st.date + 'gold'), goldZ = g % ZONES.length, goldK = Math.floor(g / ZONES.length) % 3;
     var P = opts.pos && opts.pos.z != null ? opts.pos : { x: START.x, z: START.z, yaw: 0 };
     var pos = { x: P.x, z: P.z }, yaw = P.yaw || 0, speed = 0;
+    if(!freeAt(pos.x,pos.z)){var safe=nearestFree(Math.floor(pos.x/CELL),Math.floor(pos.z/CELL));pos=safe?{x:(safe[0]+0.5)*CELL,z:(safe[1]+0.5)*CELL}:{x:START.x,z:START.z};}
     var route = [], arrive = null, faceTo = null, busy = false, joy = null, nearZ = -1, sceneZ = -1;
-    var T, renderer, scene, cam, me, meMat, shadow, frames = {}, frame = 1, stepAcc = 0, stepLeft = false, phase = 0, camYaw = yaw, camPos = null, raf = 0, last = 0;
+    var T, renderer, scene, cam, me, meMat, shadow, frames = {}, frame = 1, stepAcc = 0, stepLeft = false, phase = 0, camYaw = yaw, orbitYaw = yaw, camPos = null, raf = 0, last = 0;
 
     function say(t) { msgEl.textContent = t; msgEl.classList.toggle('show', !!t); }
     function dots() { var d = document.querySelectorAll('.hdots i'); for (var i = 0; i < d.length; i++) d[i].className = i < st.tries ? 'on' : ''; }
@@ -318,8 +386,8 @@
       cam = new T.PerspectiveCamera(62, 1, 0.1, 60);
       build(T, scene);
       loadFrames();
-      meMat = new T.SpriteMaterial({ map: frames.back1, transparent: true, alphaTest: 0.05, depthTest: false }); // 매대 뒤에서도 내 캐릭터가 보이게
-      me = new T.Sprite(meMat); me.scale.set(1.75, 1.75, 1); me.center.set(0.5, 0.03); me.renderOrder = 10; scene.add(me);
+      meMat = new T.SpriteMaterial({ map: frames.back1, transparent: true, alphaTest: 0.05, depthTest: true, depthWrite: false }); // 매대 뒤에서도 내 캐릭터가 보이게
+      me = new T.Sprite(meMat); me.scale.set(1.33, 1.33, 1); me.center.set(0.5, 0.03); me.renderOrder = 10; scene.add(me);
       var sc = document.createElement('canvas'); sc.width = sc.height = 64;
       var q = sc.getContext('2d'), gr = q.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(0,0,0,.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); q.fillStyle = gr; q.fillRect(0, 0, 64, 64);
       shadow = new T.Mesh(new T.PlaneGeometry(0.9, 0.5), new T.MeshBasicMaterial({ map: new T.CanvasTexture(sc), transparent: true, depthWrite: false }));
@@ -361,18 +429,20 @@
     function tick(t) {
       if (!alive) return;
       var dt = Math.min(0.05, (t - (last || t)) / 1000); last = t;
-      var want = 0, turnRate = 0;
+      var want = 0, turnRate = 0, travel = yaw;
+      var oldX = pos.x, oldZ = pos.z;
       if (!busy && sceneZ < 0) {
-        if (joy && (Math.abs(joy.dx) > 6 || Math.abs(joy.dy) > 6)) {
+        if (joy && joy.mode === 'walk' && Math.hypot(joy.dx, joy.dy) > 5) {
           route = []; arrive = null; faceTo = null;
-          turnRate = Math.max(-1, Math.min(1, joy.dx / 80)) * TURN * 0.7;
-          want = Math.max(-0.4, Math.min(1, -joy.dy / 80));
+          travel = camYaw + Math.atan2(joy.dx, -joy.dy) * 180 / Math.PI;
+          turnRate = angDiff(yaw, travel) * 12;
+          want = Math.min(1, Math.hypot(joy.dx, joy.dy) / 52);
         } else if (route.length) {
           var tg = route[0], dx = tg.x - pos.x, dz = tg.z - pos.z, d = Math.hypot(dx, dz);
           var wy = Math.atan2(dx, -dz) * 180 / Math.PI, ad = angDiff(yaw, wy);
-          turnRate = Math.max(-TURN, Math.min(TURN, ad * 4));
+          travel = wy; turnRate = ad * 10;
           want = Math.abs(ad) < 50 ? (route.length === 1 ? Math.min(1, d / 60 + 0.25) : 1) : 0.2;
-          if (d < 10) route.shift();
+          if (d < 0.01) route.shift();
         } else if (faceTo != null) {
           var ad2 = angDiff(yaw, faceTo);
           if (Math.abs(ad2) < 1.5) { yaw = faceTo; faceTo = null; } else turnRate = Math.max(-TURN, Math.min(TURN, ad2 * 4));
@@ -382,34 +452,43 @@
       speed += (want - speed) * Math.min(1, dt * 5);
       yaw += turnRate * dt;
       if (Math.abs(speed) > 0.01) {
-        var a = yaw * Math.PI / 180, s = SPEED / U * speed * dt, nx = pos.x + Math.sin(a) * s, nz = pos.z - Math.cos(a) * s;
+        var a = travel * Math.PI / 180, s = SPEED / U * speed * dt, nx = pos.x + Math.sin(a) * s, nz = pos.z - Math.cos(a) * s;
+        if (tg && route.length && want > 0 && s>=d) {nx=tg.x;nz=tg.z;route.shift();if(!route.length)speed=0;}
         if (freeAt(nx, nz)) { pos.x = nx; pos.z = nz; }
         else if (freeAt(nx, pos.z)) pos.x = nx;
         else if (freeAt(pos.x, nz)) pos.z = nz;
         else speed = 0;
       }
-      var moving = Math.abs(speed) > 0.08;
+      var distance = Math.hypot(pos.x - oldX, pos.z - oldZ) * U;
+      var moving = distance > dt * 0.08;
       // 걸음: 속도에 맞춰 발 바꾸기 + 위아래 출렁 + 살짝 흔들림
       if (moving) {
-        phase += dt * Math.abs(speed) * 7.2;
+        phase += distance * 4.8;
         var stepNow = Math.floor(phase / Math.PI);
         if (stepNow !== stepAcc) { stepAcc = stepNow; frame = frame === 1 ? 2 : 1; stepLeft = !stepLeft; if (soundOn) footstep(stepLeft); }
       } else { phase = 0; frame = 1; }
-      var dir = moving && turnRate < -70 ? 'left' : moving && turnRate > 70 ? 'right' : 'back';
+      var side = Math.sin(angDiff(camYaw, yaw) * Math.PI / 180);
+      var dir = side < -0.48 ? 'left' : side > 0.48 ? 'right' : 'back';
       if (meMat.map !== frames[dir + frame]) { meMat.map = frames[dir + frame]; meMat.needsUpdate = true; }
       var bob = moving ? Math.abs(Math.sin(phase)) * 0.05 : 0;
       me.position.set(W(pos.x), bob, Wz(pos.z));
       meMat.rotation = moving ? Math.sin(phase) * 0.025 : 0;
       shadow.position.set(W(pos.x), 0.01, Wz(pos.z)); shadow.rotation.z = -yaw * Math.PI / 180;
       // 카메라: 방향은 천천히 따라 돌고, 벽에 막히면 당겨 옴
-      camYaw += angDiff(camYaw, yaw) * Math.min(1, dt * 3);
+      camYaw += angDiff(camYaw, orbitYaw) * (1 - Math.exp(-dt * 12));
       var ca = camYaw * Math.PI / 180, sx = Math.sin(ca), cz = Math.cos(ca), dist = 3.4;
-      for (var b = 0.3; b <= 3.4; b += 0.1) { var px = pos.x - sx * b / U, pz = pos.z + cz * b / U; if (inBox(px, pz) || px < 25 || px > IW - 25 || pz < 25) { dist = Math.max(0.6, b - 0.25); break; } }
+      for (var b = 0.3; b <= 3.4; b += 0.1) { var px = pos.x - sx * b / U, pz = pos.z + cz * b / U; if (!clearance(px,pz,8) || px < 25 || px > IW - 25 || pz < 25) { dist = Math.max(0.08, b - 0.18); break; } }
       // 좁은 곳에선 카메라를 위로 올려 캐릭터가 가려지지 않게
       var ty = 2.05 + (3.4 - dist) * 0.55 + Math.sin(phase * 2) * (moving ? 0.015 : 0);
       var tx = W(pos.x) - sx * dist, tz = Wz(pos.z) + cz * dist;
       if (!camPos) camPos = new T.Vector3(tx, ty, tz);
       camPos.x += (tx - camPos.x) * Math.min(1, dt * 6); camPos.y += (ty - camPos.y) * Math.min(1, dt * 6); camPos.z += (tz - camPos.z) * Math.min(1, dt * 6);
+      var ox=camPos.x-W(pos.x),oz=camPos.z-Wz(pos.z), span=Math.hypot(ox,oz),steps=Math.ceil(span/0.06);
+      for(var k=1;k<=steps;k++) {
+        if(!clearance(pos.x+ox*k/steps/U,pos.z+oz*k/steps/U,8)){
+          camPos.x=W(pos.x)+ox*(k-1)/steps;camPos.z=Wz(pos.z)+oz*(k-1)/steps;break;
+        }
+      }
       cam.position.copy(camPos);
       cam.lookAt(W(pos.x) + sx * 2.2, 1.05, Wz(pos.z) - cz * 2.2);
       renderer.render(scene, cam);
@@ -422,20 +501,41 @@
     view.addEventListener('pointerdown', function (e) {
       if (soundOn) audio();
       if (e.target.closest('.hlook, .hmini, .hmapov, .hscene3') || sceneZ >= 0 || busy) return;
-      joy = { x: e.clientX, y: e.clientY, dx: 0, dy: 0, id: e.pointerId };
+      if (!renderer || joy || !e.isPrimary) return;
+      var bounds = view.getBoundingClientRect();
+      joy = { x: e.clientX, y: e.clientY, dx: 0, dy: 0, id: e.pointerId, dragged: false,
+        mode: e.clientX < bounds.left + bounds.width / 2 ? 'walk' : 'look', angle: orbitYaw };
       try { view.setPointerCapture(e.pointerId); } catch (er) {}
       var rc = view.getBoundingClientRect();
-      pad.style.left = (e.clientX - rc.left) + 'px'; pad.style.top = (e.clientY - rc.top) + 'px'; pad.classList.add('show');
+      pad.style.left = (e.clientX - rc.left) + 'px'; pad.style.top = (e.clientY - rc.top) + 'px'; pad.classList.toggle('show', joy.mode === 'walk');
       say('');
     });
     view.addEventListener('pointermove', function (e) {
       if (!joy || joy.id !== e.pointerId) return;
       joy.dx = e.clientX - joy.x; joy.dy = e.clientY - joy.y;
+      if (Math.hypot(joy.dx, joy.dy) > 7) joy.dragged = true;
+      if (joy.mode === 'look') { orbitYaw = joy.angle - joy.dx * 0.35; return; }
       var m = Math.min(1, 46 / Math.max(1, Math.hypot(joy.dx, joy.dy)));
       pad.firstChild.style.transform = 'translate(' + joy.dx * m + 'px,' + joy.dy * m + 'px)';
     });
     function endJoy() { joy = null; pad.classList.remove('show'); pad.firstChild.style.transform = ''; }
-    view.addEventListener('pointerup', endJoy);
+    view.addEventListener('pointerup', function(e) {
+      if (!joy || joy.id !== e.pointerId) return;
+      if (!joy.dragged && renderer) {
+        var rect = cv.getBoundingClientRect();
+        var ray = new T.Raycaster();
+        ray.setFromCamera(new T.Vector2((e.clientX - rect.left) / rect.width * 2 - 1,
+          1 - (e.clientY - rect.top) / rect.height * 2), cam);
+        var hit = ray.intersectObjects(scene.children, false).find(function(h) {
+          return h.object.isMesh && h.object !== shadow;
+        });
+        if (hit && hit.object.name === 'walkable-floor') {
+          var x = hit.point.x / U + IW / 2, z = hit.point.z / U + IH / 2;
+          if (freeAt(x,z)) goTo(x,z);
+        }
+      }
+      endJoy();
+    });
     view.addEventListener('pointercancel', endJoy);
     look.addEventListener('click', function () { if (nearZ >= 0) { var zi = nearZ; route = []; faceTo = ZONES[zi].keep ? null : ZONES[zi].face; arrive = function () { openScene(zi); }; } });
 
@@ -528,7 +628,7 @@
       setTimeout(function () { gate.classList.add('gone'); }, 900);
       setTimeout(function () {
         gate.style.display = 'none';
-        say(st.found ? '오늘 골드 태그는 이미 찾았어요! 매장은 자유롭게 둘러보세요' : st.tries <= 0 ? '오늘 기회를 다 썼어요. 내일 다시 도전!' : '아래 코너 이름을 누르거나, 화면을 누른 채 끌어서 걸어 보세요');
+        say(st.found ? '오늘 골드 태그는 이미 찾았어요! 매장은 자유롭게 둘러보세요' : st.tries <= 0 ? '오늘 기회를 다 썼어요. 내일 다시 도전!' : '원하는 통로 바닥을 톡 눌러 걸어 보세요');
         if (!opts.pos || opts.pos.z == null) goTo(835, 700);
       }, 1300);
       opts.entered();
