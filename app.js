@@ -386,6 +386,13 @@
     return h;
   }
 
+  function resetHunt() {
+    var t=treasure();
+    t.rewarded=!!(t.rewarded || t.found);
+    t.found=false; t.opened={}; t.tries=GBHunt.TRIES;
+    V.huntPos=null; V.huntIn=false; V.screen='hunt'; V.detail=null;
+    save();
+  }
   function treasureView() {
     var t = treasure(), n = window.GBHunt ? GBHunt.TRIES : 5;
     var msg = t.found ? '오늘 골드 태그를 찾았어요! 500P 적립 완료' : t.tries <= 0 ? '동기찬스로 기회 3회를 더 받아요' : '오늘 남은 기회 ' + t.tries + '번';
@@ -394,7 +401,7 @@
       (t.tries === 0 && !t.found ? '<button class="btn" data-a="huntBonus">' + GBHunt.BONUS_LABEL + '</button>' : '') +
       '<button class="hentry" data-a="hunt"><div class="hstore"><img src="img/hunt/store-s.webp" alt=""><img class="hwho" src="img/hunt/' + (S.avatar === 'm' ? 'm' : 'f') + '-back-1.webp" alt=""><i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i></div>' +
       '<div class="htxt"><b>매장 안으로 들어가기</b><span>' + msg + '</span></div></button>' +
-      '<section class="card" style="gap:6px"><div class="h2">이렇게 찾아요</div><div style="font-size:13px;line-height:1.8">1. 입구에서 여자·남자 캐릭터를 골라요<br>2. 캐릭터 머리를 누르고 가고 싶은 쪽으로 밀어요<br>3. 코너 이름이나 바닥을 누르면 타닥타닥 걸어가요<br>4. 코너에 도착하면 상품 사이에 삐져나온 <b>가격표</b>를 눌러 보세요<br>5. 꽝이면 거리와 상품 모양을 단서로 드려요</div></section>';
+      '<button class="btn" data-a="huntReset">보물찾기 리셋</button><section class="card" style="gap:6px"><div class="h2">이렇게 찾아요</div><div style="font-size:13px;line-height:1.8">1. 입구에서 여자·남자 캐릭터를 골라요<br>2. 캐릭터 머리를 누르고 가고 싶은 쪽으로 밀어요<br>3. 코너 이름이나 바닥을 누르면 타닥타닥 걸어가요<br>4. 코너에 도착하면 상품 사이에 삐져나온 <b>가격표</b>를 눌러 보세요<br>5. 꽝이면 거리와 상품 모양을 단서로 드려요</div></section>';
   }
 
   function memberView() {
@@ -559,7 +566,7 @@
       render.unhunt = GBHunt.mount({
         st: treasure(), save: save, avatar: S.avatar || 'f', sound: S.sound !== false,
         setAvatar: function (a) { S.avatar = a; save(); }, setSound: function (on) { S.sound = on; save(); },
-        onFind: function () { S.points += 500; S.history.unshift({ label: '보물찾기 골드 태그 발견', date: md(today0()), pts: 500 }); save(); }
+        onFind: function () { var t=treasure(); if(t.rewarded){save();return false;} t.rewarded=true; S.points += 500; S.history.unshift({ label: '보물찾기 골드 태그 발견', date: md(today0()), pts: 500 }); save(); return true; }
       }, {
         pos: V.huntPos, skipGate: V.huntIn,
         savePos: function (p) { V.huntPos = p; },
@@ -647,6 +654,7 @@
     unqueue: function (id) { delete S.queue[id]; save(); toast('줄에서 빠졌어요'); },
     hunt: function () { V.screen = 'hunt'; V.huntIn = false; },
     huntBonus: function () { if (GBHunt.claimBonus(treasure())) save(); },
+    huntReset: resetHunt,
     huntExit: function () { V.screen = 'tabs'; V.tab = 'treasure'; },
     reset: function () {
       if (!window.confirm('찜·포인트·주문 기록을 처음 상태로 되돌릴까요?')) return;
@@ -679,5 +687,11 @@
   setInterval(function () { if (!V.detail && V.screen === 'tabs') render(); }, 60000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) render(); });
 
-  render();
+  function useResetLink() {
+    if(location.hash !== '#hunt-reset')return;
+    history.replaceState(null,'',location.pathname+location.search);
+    resetHunt(); render();
+  }
+  window.addEventListener('hashchange',useResetLink);
+  if(location.hash === '#hunt-reset')useResetLink();else render();
 })();

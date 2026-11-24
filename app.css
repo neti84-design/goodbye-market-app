@@ -526,3 +526,5 @@ button.logo { padding: 0; text-align: left; }
 .hscene3 .tag-hit[hidden] {display:none;}
 .tag-hit span {display:grid;place-items:center;box-sizing:border-box;height:30px;padding-left:7px;border:2px solid #603c19;border-radius:9px 4px 4px 9px;background:radial-gradient(circle at 6px 50%,#694522 2px,transparent 3px),#fff3cb;color:#422812;font-size:13px;font-weight:800;line-height:1;}
 .tag-hit.foil span {background:radial-gradient(circle at 6px 50%,#694522 2px,transparent 3px),linear-gradient(120deg,#ec9e20,#fff3a5 47%,#efac28);}
+
+.htop .hsnd {order:3;margin-left:auto;margin-right:0;min-height:40px;white-space:nowrap;color:#30291f;background:#fff4da;border-color:#c99a50;}

@@ -123,7 +123,7 @@
   var AC = null, noiseBuf = null;
   function audio() {
     if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
-    if (AC && AC.state === 'suspended') AC.resume();
+    if (AC && (AC.state === 'suspended' || AC.state === 'interrupted')) AC.resume().catch(function(){});
     return AC;
   }
   function tap(t, freq, vol) {
@@ -139,6 +139,11 @@
       var d = noiseBuf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
     var t = AC.currentTime, p = left ? 1 : 1.12;
+    var heel=AC.createOscillator(), envelope=AC.createGain();
+    heel.type='sine';heel.frequency.setValueAtTime(172*p,t);heel.frequency.exponentialRampToValueAtTime(88*p,t+0.10);
+    envelope.gain.setValueAtTime(0.0001,t);envelope.gain.linearRampToValueAtTime(0.25,t+0.007);
+    envelope.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+    heel.connect(envelope);envelope.connect(AC.destination);heel.start(t);heel.stop(t+0.13);
     tap(t, 1500 * p, 0.5); tap(t + 0.055, 2300 * p, 0.32);
   }
   function chime(win) {
@@ -186,7 +191,7 @@
     return '<div class="hunt">' +
       '<div class="htop"><button class="hback" data-a="huntExit" aria-label="보물찾기로 돌아가기"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>' +
       '<div class="ht"><b id="hwhere">굿바이마켓 김포점</b><small>골드 태그 찾기</small></div>' +
-      '<button class="hsnd" id="hsnd" aria-label="소리 켜고 끄기">' + (sound ? '소리 켬' : '소리 끔') + '</button>' +
+      '<button class="hsnd" id="hsnd" aria-pressed="' + sound + '">' + (sound ? '소리 끄기' : '소리 켜기') + '</button>' +
       '<div class="hdots" aria-label="남은 기회 ' + st.tries + '번">' + dots + '</div></div>' +
       '<div class="hview v3" id="hview"><canvas id="hcv"></canvas>' +
       '<div class="hload" id="hload">매장 불을 켜는 중…</div>' +
@@ -386,6 +391,7 @@
     var $ = function (id) { return document.getElementById(id); };
     var view = $('hview'), cv = $('hcv'), look = $('hlook'), pad = $('hpad');
     var msgEl = $('hmsg'), modal = $('hmodal'), gate = $('hgate'), mapov = $('hmapov'), where = $('hwhere'), scn = $('hscene');
+    var credited = false;
     var g = seedOf(st.date + 'gold'), goldZ = g % ZONES.length, goldK = Math.floor(g / ZONES.length) % 3;
     var P = opts.pos && opts.pos.z != null ? opts.pos : { x: START.x, z: START.z, yaw: 0 };
     var pos = { x: P.x, z: P.z }, yaw = P.yaw || 0, speed = 0;
@@ -518,7 +524,7 @@
         phase += distance * 4.8;
         var stepNow = Math.floor(phase / Math.PI);
         if (stepNow !== stepAcc) { stepAcc = stepNow; frame = frame === 1 ? 2 : 1; stepLeft = !stepLeft; if (soundOn) footstep(stepLeft); }
-      } else { phase = 0; frame = 1; }
+      } else { phase = 0; stepAcc = -1; frame = 1; }
       meMat.map = frames['back' + frame];
       var bob = moving ? Math.abs(Math.sin(phase)) * 0.05 : 0;
       me.position.set(W(pos.x), bob, Wz(pos.z));
@@ -614,7 +620,7 @@
     view.addEventListener('lostpointercapture', endJoy);
     look.addEventListener('click', function () { if (nearZ >= 0) { var zi = nearZ; route = []; faceTo = ZONES[zi].keep ? null : ZONES[zi].face; arrive = function () { openScene(zi); }; } });
 
-    var tags = [], prints = [], target, lens;
+    var tags = [], prints = [], arrows = [], target, lens;
     function makeHuntObjects() {
       target = new T.Vector3(); lens = new T.Vector3();
       var tagShape = new T.Shape();
@@ -636,6 +642,16 @@
           scene.add(tag); tags.push(tag);
         }
       });
+      var arrowShape=new T.Shape();
+      arrowShape.moveTo(0,0.18);arrowShape.lineTo(0.16,-0.025);arrowShape.lineTo(0.065,-0.025);
+      arrowShape.lineTo(0.065,-0.16);arrowShape.lineTo(-0.065,-0.16);arrowShape.lineTo(-0.065,-0.025);
+      arrowShape.lineTo(-0.16,-0.025);arrowShape.closePath();
+      var arrowGeometry=new T.ShapeGeometry(arrowShape);
+      var arrowMaterial=new T.MeshBasicMaterial({color:0x007b75,side:T.DoubleSide});
+      for(var j=0;j<4;j++){
+        var arrow=new T.Mesh(arrowGeometry,arrowMaterial);
+        arrow.rotation.order='YXZ';arrow.rotation.x=-Math.PI/2;scene.add(arrow);arrows.push(arrow);
+      }
       var sole=new T.Shape();
       sole.absellipse(0,0,0.063,0.13,0,Math.PI*2,false,0);
       var soleGeo=new T.ShapeGeometry(sole);
@@ -647,6 +663,16 @@
     }
     function updateHuntView(walking,heading){
       var a=heading*Math.PI/180;
+      arrows.forEach(function(arrow,i){
+        arrow.visible=false;
+        if(sceneZ>=0)return;
+        var angle=yaw*Math.PI/180+i*Math.PI/2,dx=Math.sin(angle),dz=-Math.cos(angle);
+        for(var step=1;step<=12;step++){
+          if(!freeAt(pos.x+dx*step*0.075/U,pos.z+dz*step*0.075/U))return;
+        }
+        arrow.position.set(W(pos.x)+dx*0.78,0.015,Wz(pos.z)+dz*0.78);
+        arrow.rotation.y=-angle;arrow.visible=true;
+      });
       prints.forEach(function(mark,i){
         mark.visible=false;
         if(!walking || sceneZ>=0)return;
@@ -700,13 +726,13 @@
       if (st.found) { sceneMsg('오늘 골드 태그는 이미 찾았어요! 내일 또 만나요'); return; }
       if (st.tries <= 0) { offerBonus(); return; }
       busy = true; el.classList.add('shake'); scn.classList.add('dig'); sceneMsg('뒤적뒤적…');
-      if (soundOn) { audio(); footstep(true); setTimeout(function () { footstep(false); }, 300); setTimeout(function () { footstep(true); }, 600); }
+      if (soundOn) { audio(); footstep(true); setTimeout(function () { if(alive && soundOn)footstep(false); }, 300); setTimeout(function () { if(alive && soundOn)footstep(true); }, 600); }
       setTimeout(function () {
         if (!alive) return;
         busy = false; el.classList.remove('shake'); scn.classList.remove('dig');
         st.opened[key] = true; st.tries -= 1;
         var hit = zi === goldZ && k === goldK;
-        if (hit) { st.found = true; ctx.onFind(); } else ctx.save();
+        if (hit) { st.found = true; credited=ctx.onFind(); } else ctx.save();
         if (soundOn) chime(hit);
         el.hidden = true;
         sceneMsg(hit ? '골드 태그를 찾았어요!' : [0,1,2].every(function(n){return st.opened[z.id+':'+n]}) ? '이 매대는 모두 확인했어요. 다른 매대를 살펴보세요.' : '다른 가격표를 살펴보세요.');
@@ -725,7 +751,7 @@
       if (hit) {
         var conf = ''; for (var i = 0; i < 18; i++) conf += '<i style="--x:' + (Math.random() * 240 - 120) + 'px;--r:' + (Math.random() * 540) + 'deg;--d:' + (Math.random() * 0.4) + 's;background:' + ['#F26A1B', '#B8860B', '#FFD34D', '#2B2B2B'][i % 4] + '"></i>';
         h = '<div class="mcard2 win"><div class="conf">' + conf + '</div><div class="tag"><svg viewBox="0 0 120 70" width="150" height="88"><path d="M18 6h94a4 4 0 0 1 4 4v50a4 4 0 0 1-4 4H18L3 35z" fill="#D4A017" stroke="#7A5A00" stroke-width="3"/><circle cx="20" cy="35" r="6" fill="#FFF6DC" stroke="#7A5A00" stroke-width="2.5"/><text x="70" y="32" text-anchor="middle" font-size="15" font-weight="900" fill="#fff">GOLD</text><text x="70" y="50" text-anchor="middle" font-size="13" font-weight="900" fill="#fff">TAG</text></svg></div>' +
-          '<b class="big">골드 태그 발견!</b><div class="wpts">+500P 적립</div><p>실제 김포점 <b>' + z.name + '</b> 코너에도 오늘의 골드 태그 상품이 있어요. 매장에서 찾으면 그 자리에서 초특가!</p>' +
+          '<b class="big">골드 태그 발견!</b><div class="wpts">' + (credited ? '+500P 적립' : '오늘의 500P는 이미 적립됐어요') + '</div><p>실제 김포점 <b>' + z.name + '</b> 코너에도 오늘의 골드 태그 상품이 있어요. 매장에서 찾으면 그 자리에서 초특가!</p>' +
           '<button class="btn" data-h="close">좋아요</button></div>';
       } else {
         var hi = hint(zi);
@@ -764,7 +790,7 @@
       if (soundOn) audio(); walkZone(+z.getAttribute('data-z'));
     });
     $('hsnd').addEventListener('click', function () {
-      soundOn = !soundOn; ctx.setSound(soundOn); this.textContent = soundOn ? '소리 켬' : '소리 끔';
+      soundOn = !soundOn; ctx.setSound(soundOn); this.setAttribute('aria-pressed',String(soundOn)); this.textContent = soundOn ? '소리 끄기' : '소리 켜기';
       if (soundOn) { audio(); footstep(true); }
     });
 
