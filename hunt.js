@@ -174,7 +174,7 @@
       '<div class="hscene3" id="hscene"></div>' +
       '<div class="hmapov" id="hmapov"><div class="mpbox"><div class="mphd"><b>어디로 걸어갈까요?</b><button data-mx="1">닫기</button></div><div class="mpimg"><img src="img/hunt/store.webp" alt="매장 전체">' + pins + '<i class="mpme" id="mpme"></i></div><p>코너를 누르면 지금 자리에서 통로를 따라 걸어가요</p></div></div>' +
       '</div>' +
-      '<div class="hbot"><div class="hguide">어디로 갈까요? <span>바닥 톡 · 왼쪽 드래그로 걷기 · 오른쪽 드래그로 둘러보기</span></div><div class="hzs">' + chips + '</div></div>' +
+      '<div class="hbot"><div class="hguide">어디로 갈까요? <span>머리를 누르고 밀어서 걷기 · 손을 떼면 멈춰요</span></div><div class="hzs">' + chips + '</div></div>' +
       '<div class="hmodal" id="hmodal"></div>' +
       '<div class="hgate" id="hgate"><div class="gtxt"><small>오늘의 보물찾기</small><b>매장 어딘가에<br>골드 태그가 숨어 있어요</b><p>첫 도전 기회는 ' + TRIES + '번. 다 쓰면 동기찬스로 3회씩 더 받아요.</p></div>' +
       '<div class="front"><div class="sign">GOOD-BUY</div><div class="wall"><div class="glass"><div class="dr l"></div><div class="dr r"></div></div></div></div>' +
@@ -499,14 +499,29 @@
       raf = requestAnimationFrame(tick);
     }
 
+    // Project the billboard in camera space, including when the camera pitches down.
+    function touchesHead(e, bounds) {
+      if (!me || !cam || !bounds.height) return false;
+      var center = me.position.clone().applyMatrix4(cam.matrixWorldInverse);
+      center.y += (0.74 - me.center.y) * me.scale.y;
+      if (center.z >= 0) return false;
+      var pixels = bounds.height * cam.projectionMatrix.elements[5] / (-2 * center.z);
+      center.applyMatrix4(cam.projectionMatrix);
+      var x = bounds.left + (1 + center.x) * bounds.width / 2;
+      var y = bounds.top + (1 - center.y) * bounds.height / 2;
+      return Math.abs(e.clientX - x) <= Math.max(25, me.scale.x * pixels * 0.26 + 8) &&
+        Math.abs(e.clientY - y) <= Math.max(25, me.scale.y * pixels * 0.24 + 8);
+    }
     /* 손가락 조종 */
     view.addEventListener('pointerdown', function (e) {
       if (soundOn) audio();
       if (e.target.closest('.hlook, .hmini, .hmapov, .hscene3') || sceneZ >= 0 || busy) return;
       if (!renderer || joy || !e.isPrimary) return;
-      var bounds = view.getBoundingClientRect();
+      var bounds = cv.getBoundingClientRect();
+      var head = touchesHead(e, bounds);
+      if (head) { route = []; arrive = null; faceTo = null; speed = 0; }
       joy = { x: e.clientX, y: e.clientY, dx: 0, dy: 0, id: e.pointerId, dragged: false,
-        mode: e.clientX < bounds.left + bounds.width / 2 ? 'walk' : 'look', angle: yaw };
+        head: head, mode: head || e.clientX < bounds.left + bounds.width / 2 ? 'walk' : 'look', angle: yaw };
       try { view.setPointerCapture(e.pointerId); } catch (er) {}
       var rc = view.getBoundingClientRect();
       pad.style.left = (e.clientX - rc.left) + 'px'; pad.style.top = (e.clientY - rc.top) + 'px'; pad.classList.toggle('show', joy.mode === 'walk');
@@ -520,10 +535,10 @@
       var m = Math.min(1, 46 / Math.max(1, Math.hypot(joy.dx, joy.dy)));
       pad.firstChild.style.transform = 'translate(' + joy.dx * m + 'px,' + joy.dy * m + 'px)';
     });
-    function endJoy() { joy = null; pad.classList.remove('show'); pad.firstChild.style.transform = ''; }
+    function endJoy(e) { if (!joy || (e && e.pointerId !== joy.id)) return; if (joy.head) speed = 0; joy = null; pad.classList.remove('show'); pad.firstChild.style.transform = ''; }
     view.addEventListener('pointerup', function(e) {
       if (!joy || joy.id !== e.pointerId) return;
-      if (!joy.dragged && renderer) {
+      if (!joy.head && !joy.dragged && renderer) {
         var rect = cv.getBoundingClientRect();
         var ray = new T.Raycaster();
         ray.setFromCamera(new T.Vector2((e.clientX - rect.left) / rect.width * 2 - 1,
@@ -539,6 +554,7 @@
       endJoy();
     });
     view.addEventListener('pointercancel', endJoy);
+    view.addEventListener('lostpointercapture', endJoy);
     look.addEventListener('click', function () { if (nearZ >= 0) { var zi = nearZ; route = []; faceTo = ZONES[zi].keep ? null : ZONES[zi].face; arrive = function () { openScene(zi); }; } });
 
     /* 매대 앞 장면 */
@@ -646,7 +662,7 @@
       setTimeout(function () { gate.classList.add('gone'); }, 900);
       setTimeout(function () {
         gate.style.display = 'none';
-        say(st.found ? '오늘 골드 태그는 이미 찾았어요! 매장은 자유롭게 둘러보세요' : st.tries <= 0 ? '동기찬스로 기회 3회를 더 받아요' : '원하는 통로 바닥을 톡 눌러 걸어 보세요');
+        say(st.found ? '오늘 골드 태그는 이미 찾았어요! 매장은 자유롭게 둘러보세요' : st.tries <= 0 ? '동기찬스로 기회 3회를 더 받아요' : '캐릭터 머리를 누른 채 가고 싶은 쪽으로 밀어 보세요');
         if (!st.found && st.tries === 0) offerBonus();
         if (!opts.pos || opts.pos.z == null) goTo(835, 700);
       }, 1300);
