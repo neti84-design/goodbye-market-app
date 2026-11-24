@@ -147,6 +147,12 @@
     document.head.appendChild(s);
   }
 
+  var BONUS_LABEL = '골드 태그 다 썼지만 롯데MBA 동기찬스! 3회 더!';
+  function claimBonus(st) {
+    if (st.found || st.tries !== 0) return false;
+    st.tries = 3;
+    return true;
+  }
   function html(st, av, sound) {
     var dots = ''; for (var i = 0; i < TRIES; i++) dots += '<i class="' + (i < st.tries ? 'on' : '') + '"></i>';
     var chips = ZONES.map(function (z, i) { return '<button class="hz" data-z="' + i + '">' + z.name + '</button>'; }).join('');
@@ -170,7 +176,7 @@
       '</div>' +
       '<div class="hbot"><div class="hguide">어디로 갈까요? <span>바닥 톡 · 왼쪽 드래그로 걷기 · 오른쪽 드래그로 둘러보기</span></div><div class="hzs">' + chips + '</div></div>' +
       '<div class="hmodal" id="hmodal"></div>' +
-      '<div class="hgate" id="hgate"><div class="gtxt"><small>오늘의 보물찾기</small><b>매장 어딘가에<br>골드 태그가 숨어 있어요</b><p>기회는 하루 ' + TRIES + '번. 꽝이 나와도 힌트를 드려요.</p></div>' +
+      '<div class="hgate" id="hgate"><div class="gtxt"><small>오늘의 보물찾기</small><b>매장 어딘가에<br>골드 태그가 숨어 있어요</b><p>첫 도전 기회는 ' + TRIES + '번. 다 쓰면 동기찬스로 3회씩 더 받아요.</p></div>' +
       '<div class="front"><div class="sign">GOOD-BUY</div><div class="wall"><div class="glass"><div class="dr l"></div><div class="dr r"></div></div></div></div>' +
       '<div class="gsel"><div class="gq">누구로 들어갈까요?</div><div class="gpicks">' + pick + '</div></div>' +
       '<button class="btn genter" id="genter">매장 들어가기</button></div>' +
@@ -365,7 +371,7 @@
     var T, renderer, scene, cam, me, meMat, shadow, frames = {}, frame = 1, stepAcc = 0, stepLeft = false, phase = 0, cameraDistance = 3.1, raf = 0, last = 0;
 
     function say(t) { msgEl.textContent = t; msgEl.classList.toggle('show', !!t); }
-    function dots() { var d = document.querySelectorAll('.hdots i'); for (var i = 0; i < d.length; i++) d[i].className = i < st.tries ? 'on' : ''; }
+    function dots() { document.querySelector('.hdots').setAttribute('aria-label', '남은 기회 ' + st.tries + '번'); var d = document.querySelectorAll('.hdots i'); for (var i = 0; i < d.length; i++) d[i].className = i < st.tries ? 'on' : ''; }
     function angDiff(a, b) { var d = (b - a) % 360; if (d > 180) d -= 360; if (d < -180) d += 360; return d; }
     function minimap() {
       var l = (pos.x / IW * 100) + '%', t = (pos.z / IH * 100) + '%';
@@ -560,7 +566,7 @@
       var zi = sceneZ, z = ZONES[zi], key = z.id + ':' + k;
       if (st.opened[key] || busy) return;
       if (st.found) { sceneMsg('오늘 골드 태그는 이미 찾았어요! 내일 또 만나요'); return; }
-      if (st.tries <= 0) { sceneMsg('오늘 기회를 다 썼어요. 내일 다시 도전!'); return; }
+      if (st.tries <= 0) { offerBonus(); return; }
       busy = true; el.classList.add('shake'); scn.classList.add('dig'); sceneMsg('뒤적뒤적…');
       if (soundOn) { audio(); footstep(true); setTimeout(function () { footstep(false); }, 300); setTimeout(function () { footstep(true); }, 600); }
       setTimeout(function () {
@@ -592,11 +598,27 @@
         var hi = hint(zi);
         h = '<div class="mcard2 lose"><div class="stamp">꽝</div><b class="big">' + z.name + ' ' + (k + 1) + '번 자리엔 없었어요</b>' +
           (st.tries > 0 ? '<div class="hint ' + hi[0] + '">' + hi[1] + '</div><p>남은 기회 <b>' + st.tries + '번</b></p><button class="btn" data-h="close">다시 찾기</button>'
-            : '<p>오늘 기회를 다 썼어요.<br>골드 태그는 <b>' + ZONES[goldZ].name + '</b> 코너에 있었어요. 내일 다시 도전!</p><button class="btn" data-h="close">확인</button>') + '</div>';
+            : bonusButton()) + '</div>';
       }
       modal.innerHTML = h; modal.classList.add('show');
     }
-    modal.addEventListener('click', function (e) { if (e.target.closest('[data-h="close"]') || e.target === modal) modal.classList.remove('show'); });
+    function bonusButton() {
+      return '<button class="btn" data-h="bonus">' + BONUS_LABEL + '</button>';
+    }
+    function offerBonus() {
+      modal.innerHTML = '<div class="mcard2">' + bonusButton() + '</div>';
+      modal.classList.add('show');
+    }
+    modal.addEventListener('click', function (e) {
+      if (e.target.closest('[data-h="bonus"]')) {
+        if (claimBonus(st)) {
+          ctx.save(); dots(); sceneMsg('기회 3회 충전! 다른 자리를 찾아보세요');
+          say('롯데MBA 동기찬스! 기회 3회 충전');
+        }
+        modal.classList.remove('show');
+        return;
+      }
+      if (e.target.closest('[data-h="close"]') || e.target === modal) modal.classList.remove('show'); });
 
     view.addEventListener('click', function (e) {
       if (e.target.closest('#hmini')) { mapov.classList.add('show'); return; }
@@ -624,12 +646,13 @@
       setTimeout(function () { gate.classList.add('gone'); }, 900);
       setTimeout(function () {
         gate.style.display = 'none';
-        say(st.found ? '오늘 골드 태그는 이미 찾았어요! 매장은 자유롭게 둘러보세요' : st.tries <= 0 ? '오늘 기회를 다 썼어요. 내일 다시 도전!' : '원하는 통로 바닥을 톡 눌러 걸어 보세요');
+        say(st.found ? '오늘 골드 태그는 이미 찾았어요! 매장은 자유롭게 둘러보세요' : st.tries <= 0 ? '동기찬스로 기회 3회를 더 받아요' : '원하는 통로 바닥을 톡 눌러 걸어 보세요');
+        if (!st.found && st.tries === 0) offerBonus();
         if (!opts.pos || opts.pos.z == null) goTo(835, 700);
       }, 1300);
       opts.entered();
     }
-    if (opts.skipGate) gate.style.display = 'none';
+    if (opts.skipGate) { gate.style.display = 'none'; if (!st.found && st.tries === 0) offerBonus(); }
     else $('genter').addEventListener('click', enter);
 
     dots(); minimap();
@@ -642,5 +665,5 @@
     };
   }
 
-  window.GBHunt = { html: html, mount: mount, TRIES: TRIES, ZONES: ZONES };
+  window.GBHunt = { claimBonus: claimBonus, BONUS_LABEL: BONUS_LABEL, html: html, mount: mount, TRIES: TRIES, ZONES: ZONES };
 })();
